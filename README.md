@@ -45,8 +45,6 @@
 
 ## 快速开始
 
-> ⚠️ 源码尚未导入，本节为发布后的目标流程，暂不可执行。
-
 ```bash
 git clone https://github.com/ORG_PLACEHOLDER/jianzao-erp-community.git
 cd jianzao-erp-community
@@ -78,8 +76,6 @@ cd deploy && cp .env.example .env && docker compose up -d
 核心代码由项目发起人维护，社区贡献在 CLA 框架下接受。
 
 ## 目录结构
-
-> ⚠️ 源码尚未导入，以下为发布后的目标结构。
 
 ```
 jianzao-erp-community/

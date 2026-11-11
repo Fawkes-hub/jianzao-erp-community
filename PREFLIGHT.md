@@ -8,12 +8,18 @@
 | 项 | 状态 |
 |---|---|
 | 目录 | `/Users/fawkes/Documents/ERP/jianzao-erp-community/`（与主仓 `erp/` 平级，独立） |
-| 源码 | ❌ 未导入 |
-| Git 仓库 | ❌ 未初始化（按约定先给项目发起人审，不自行 init / commit / push） |
+| 源码 | ✅ 已导入并裁剪（1543 个跟踪文件，约 20 MB） |
+| Git 仓库 | ✅ 已初始化，10 个策展提交，单一公开身份，`git fsck` 干净 |
 | 公开仓库 | ❌ 未创建 |
-| 推送 | ❌ 无 |
+| 推送 | ❌ 无（**按约定不自行建远端、不推送**） |
+| 后端编译 | ✅ `mvn -o -f jianzao-backend/pom.xml -pl jianzao-admin -am compile -DskipTests` → BUILD SUCCESS（26 模块） |
+| 前端构建 | ✅ `pnpm install --frozen-lockfile` + `pnpm build:dev` → EXIT=0（仅 chunk 体积警告） |
+| 敏感串 | ✅ 全仓 grep 归零（AppID / VPS / 域名 / clientId / 客户名 / 公司邮箱 / 内部称呼 / 旧品牌） |
+| 私有资产 | ✅ 无 `.env*`（仅 `.env.example`）、无 `dist/`、无二进制图片素材、无原 `.git` 对象 |
 
 主仓 `erp/` 全程只读，未修改任何文件。
+
+**注意**：本文件是内部检查表，**发布前必须删除**；`PREFLIGHT.md` 自身已被 git 跟踪，删除时需 `git rm`。
 
 ## 已起草的文件
 
