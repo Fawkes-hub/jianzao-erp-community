@@ -1,0 +1,102 @@
+# 简造ERP社区版
+
+> 一套现代栈、可直接 fork 二次开发的基础进销存骨架。
+>
+> **简造ERP社区版**是简造 ERP 的开源社区发行版，专注基础资料与 PC 端进销存操作功能。
+
+---
+
+## 这是什么
+
+面向小 micro 企业 / 个体商贸场景的轻量进销存，覆盖「采购 → 销售 → 库存 → 收付 → 对账」完整闭环。代码可读、结构清晰、一键启动，适合作为二次开发的起点。
+
+**技术栈**
+
+| 层 | 选型 |
+|---|---|
+| 后端 | Java 17 · Spring Boot 3.5 · MyBatis-Plus · Sa-Token · MySQL 8 · Redis 7 |
+| 底座 | RuoYi-Vue-Plus 5.X（MIT，已裁剪并重命名） |
+| 前端 | Vue 3.5 · Vite 7 · TypeScript · Pinia · UnoCSS · **TDesign Vue Next 1.20** |
+| 部署 | Docker Compose（MySQL + Redis + App + Nginx） |
+
+## 为什么值得看
+
+- **全量 TDesign 前端**：3,100+ 处 TDesign 组件实例、110+ 个页面，Element Plus 依赖与模板标签已彻底移除；配套自研 token 体系、亮/暗双主题、`TDesignResolver` 组件自动导入、`.erp-*` 语义 class 库。RuoYi 系项目大多仍停在 Element Plus —— 这是一套可直接复用的现代化迁移实践，见 [docs/ui-migration.md](docs/ui-migration.md)。
+- **现代栈骨架**：Spring Boot 3.5 / Java 17 / Vue 3 / Vite 7，不是老一代 jQuery 或 Vue 2 底座。
+- **完整闭环而非演示**：基础资料、采购/销售与退货、其他出入库、库存流水与期初、应收应付与收付款核销、结算账户、综合成本、月度对账单、单据打印、采购/销售订单分批执行 —— 都能跑通。
+- **干净的可读历史**：按里程碑重建的提交演进（见 [docs/history.md](docs/history.md)）。
+
+> 诚实限定：组件层已全量 TDesign 化，但视觉 token 仍沿用 `--el-*` 命名作为自有兼容层（自 Element Plus `base.css` 的 `:root` 值演化而来），设计系统是「TDesign 组件 + 自研 token / 暗色体系」的混合体，不是纯 TDesign 设计系统。
+
+## 功能范围
+
+| 模块 | 内容 |
+|---|---|
+| 基础资料 | 商品（分类、配比、成本单价、含税、Excel 导入导出）、供应商、客户、仓库 |
+| 采购 | 采购入库（运杂费分摊、不含税成本、移动加权）、采购退货 |
+| 销售 | 销售出库（一单一价、成本快照、毛利）、销售退货 |
+| 库存 | 其他入/出库、库存快照与流水、库存期初、条件更新防超卖、库存查询 |
+| 财务 | 应收应付台账、往来期初、收/付款单与按单核销、其他收支、结算账户、综合成本报表 |
+| 对账与打印 | 月度对账单、内置送货单/对账单渲染、自定义打印模板 |
+| 订单 | 采购/销售订单分批执行、未交量、变更留痕 |
+| 系统 | 登录、角色、菜单、按钮级权限、运行日志 |
+
+**社区版不含**：生产/委外加工、库存盘点、工作台看板、数据备份、订单层 M2、微信小程序、SaaS 多企业账户与试用套餐。这些属于简造 ERP 商业版，见 [COMMERCIAL.md](COMMERCIAL.md)。
+
+## 快速开始
+
+> ⚠️ 源码尚未导入，本节为发布后的目标流程，暂不可执行。
+
+```bash
+git clone https://github.com/ORG_PLACEHOLDER/jianzao-erp-community.git
+cd jianzao-erp-community
+
+# 后端：先装底座，再装业务模块，最后启动
+cd jianzao-backend && mvn clean install -DskipTests && cd ..
+cd erp-modules  && mvn clean install -DskipTests && cd ..
+cd jianzao-backend/jianzao-admin && mvn spring-boot:run
+
+# 前端
+cd jianzao-erp && pnpm install && pnpm dev
+
+# 或一键起（MySQL + Redis + App + Nginx）
+cd deploy && cp .env.example .env && docker compose up -d
+```
+
+环境要求：JDK 17（运行可用 JRE 21）、Node 20+、pnpm、Maven 3.9+、Docker（可选）。
+
+## 许可证与品牌
+
+| 项 | 说明 |
+|---|---|
+| 自研代码 | **AGPL-3.0**，见 [LICENSE](LICENSE) |
+| 商业授权 | 需闭源集成、OEM 或不公开网络端改动 → 见 [COMMERCIAL.md](COMMERCIAL.md) |
+| 第三方组件 | MIT，见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) |
+| 名称与 logo | **不在开源授权范围内**，见 [TRADEMARK.md](TRADEMARK.md) |
+| 贡献 | 欢迎 PR，需先签 CLA，见 [CONTRIBUTING.md](CONTRIBUTING.md) |
+
+核心代码由项目发起人维护，社区贡献在 CLA 框架下接受。
+
+## 目录结构
+
+> ⚠️ 源码尚未导入，以下为发布后的目标结构。
+
+```
+jianzao-erp-community/
+├── jianzao-backend/     # 后端底座（RuoYi-Vue-Plus 裁剪，MIT 原文保留）
+├── erp-modules/         # 自研 ERP 业务模块（AGPL-3.0）
+├── jianzao-erp/         # 前端（TDesign）
+├── deploy/              # Docker Compose / Nginx / 初始化 SQL
+├── docs/                # 公开技术文档
+├── LICENSE              # AGPL-3.0 全文
+├── THIRD_PARTY_NOTICES.md
+├── TRADEMARK.md
+├── COMMERCIAL.md
+├── CONTRIBUTING.md
+├── CLA.md / CCLA.md
+└── README.md
+```
+
+---
+
+© 2026 简造ERP社区版项目发起人。本仓库名称与标识的使用受 [TRADEMARK.md](TRADEMARK.md) 约束。
