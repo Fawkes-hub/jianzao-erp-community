@@ -1,0 +1,320 @@
+package org.erp.fin.service.impl;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import lombok.RequiredArgsConstructor;
+import org.dromara.common.core.exception.ServiceException;
+import org.dromara.common.mybatis.core.page.PageQuery;
+import org.dromara.common.mybatis.core.page.TableDataInfo;
+import org.dromara.common.satoken.utils.LoginHelper;
+import org.erp.common.enums.StatusText;
+import org.erp.common.sequence.SequenceService;
+import org.erp.fin.domain.FinArAp;
+import org.erp.fin.domain.FinReceipt;
+import org.erp.fin.domain.FinReceiptAlloc;
+import org.erp.fin.domain.bo.FinReceiptBo;
+import org.erp.fin.domain.vo.FinReceiptVo;
+import org.erp.fin.mapper.FinReceiptAllocMapper;
+import org.erp.fin.mapper.FinReceiptMapper;
+import org.erp.fin.service.IFinArApService;
+import org.erp.fin.service.IFinReceiptService;
+import org.erp.master.domain.ErpCustomer;
+import org.erp.master.mapper.ErpCustomerMapper;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+/**
+ * 收款单服务实现
+ *
+ * 规则（DOC/11 §8、DOC/13 §7.8、DOC/12 §8）：
+ * - 确认：Σ核销明细 = 收款金额；逐行校验台账归属客户、未核销余额充足；
+ *   落 fin_receipt_alloc 并累计 fin_ar_ap.settled_amount（OPEN/PARTIAL → SETTLED）；
+ * - 撤回：先反核销（settled_amount 减回），再回 DRAFT；作废走撤回；
+ * - 部分核销、一收多单支持；已确认不可编辑。
+ */
+@RequiredArgsConstructor
+@Service
+public class FinReceiptServiceImpl implements IFinReceiptService {
+
+    private final FinReceiptMapper receiptMapper;
+    private final org.erp.fin.mapper.FinAccountMapper accountMapper;
+    private final FinReceiptAllocMapper allocMapper;
+    private final ErpCustomerMapper customerMapper;
+    private final IFinArApService arApService;
+    private final SequenceService sequenceService;
+
+    @Override
+    public TableDataInfo<FinReceiptVo> selectPage(Long customerId, String status, PageQuery pageQuery) {
+        LambdaQueryWrapper<FinReceipt> lqw = new LambdaQueryWrapper<>();
+        lqw.eq(customerId != null, FinReceipt::getCustomerId, customerId);
+        lqw.eq(status != null && !status.isBlank(), FinReceipt::getStatus, status);
+        lqw.orderByDesc(FinReceipt::getId);
+        Page<FinReceipt> page = receiptMapper.selectPage(pageQuery.build(), lqw);
+        Page<FinReceiptVo> voPage = new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
+        voPage.setRecords(page.getRecords().stream().map(this::toVo).toList());
+        return TableDataInfo.build(voPage);
+    }
+
+    @Override
+    public FinReceiptVo selectById(Long id) {
+        FinReceipt head = receiptMapper.selectById(id);
+        if (head == null) {
+            throw new ServiceException("收款单不存在");
+        }
+        FinReceiptVo vo = toVo(head);
+        vo.setAllocations(loadAllocs(id));
+        return vo;
+    }
+
+    private FinReceiptVo toVo(FinReceipt head) {
+        FinReceiptVo vo = new FinReceiptVo();
+        vo.setId(head.getId());
+        vo.setNo(head.getNo());
+        vo.setCustomerId(head.getCustomerId());
+        ErpCustomer c = customerMapper.selectById(head.getCustomerId());
+        vo.setCustomerName(c == null ? null : c.getName());
+        vo.setAmount(head.getAmount());
+        vo.setBizDate(head.getBizDate());
+        vo.setAccount(head.getAccount());
+        vo.setAccountId(head.getAccountId());
+        vo.setNegative(head.getNegative());
+        vo.setRemark(head.getRemark());
+        vo.setStatus(head.getStatus());
+        vo.setStatusText(StatusText.bill(head.getStatus()));
+        vo.setCreateTime(head.getCreateTime());
+        return vo;
+    }
+
+    private List<FinReceiptVo.AllocVo> loadAllocs(Long receiptId) {
+        List<FinReceiptAlloc> rows = allocMapper.selectList(new LambdaQueryWrapper<FinReceiptAlloc>()
+            .eq(FinReceiptAlloc::getReceiptId, receiptId)
+            .orderByAsc(FinReceiptAlloc::getId));
+        List<FinReceiptVo.AllocVo> result = new ArrayList<>();
+        for (FinReceiptAlloc row : rows) {
+            FinReceiptVo.AllocVo vo = new FinReceiptVo.AllocVo();
+            vo.setId(row.getId());
+            vo.setArApId(row.getArApId());
+            vo.setAmount(row.getAmount());
+            result.add(vo);
+        }
+        return result;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public FinReceiptVo insert(FinReceiptBo bo) {
+        FinReceipt head = new FinReceipt();
+        head.setNo(sequenceService.nextNo("SK"));
+        saveHead(head, bo);
+        saveAllocations(head.getId(), bo);
+        if (Boolean.TRUE.equals(bo.getConfirm())) {
+            confirmInternal(head);
+        }
+        return selectById(head.getId());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public FinReceiptVo update(Long id, FinReceiptBo bo) {
+        FinReceipt head = receiptMapper.selectById(id);
+        if (head == null) {
+            throw new ServiceException("收款单不存在");
+        }
+        if (!"DRAFT".equals(head.getStatus())) {
+            throw new ServiceException("仅草稿可编辑", 40902);
+        }
+        saveHead(head, bo);
+        saveAllocations(head.getId(), bo);
+        if (Boolean.TRUE.equals(bo.getConfirm())) {
+            confirmInternal(head);
+        }
+        return selectById(id);
+    }
+
+    private void saveHead(FinReceipt head, FinReceiptBo bo) {
+        head.setCustomerId(bo.getCustomerId());
+        head.setAmount(bo.getAmount().setScale(2, RoundingMode.HALF_UP));
+        head.setBizDate(bo.getBizDate());
+        // DOC/25 §3.6：新增必须选账户；存量草稿编辑（id 非空）不强制回填
+        if (head.getId() == null && bo.getAccountId() == null) {
+            throw new ServiceException("请选择结算账户");
+        }
+        applyAccount(head, bo.getAccountId(), bo.getAccount());
+        head.setNegative(Boolean.TRUE.equals(bo.getNegative()) ? 1 : 0);
+        head.setRemark(bo.getRemark());
+        head.setStatus("DRAFT");
+        if (head.getId() == null) {
+            receiptMapper.insert(head);
+        } else {
+            receiptMapper.updateById(head);
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void confirm(Long id) {
+        FinReceipt head = receiptMapper.selectById(id);
+        if (head == null) {
+            throw new ServiceException("收款单不存在");
+        }
+        if (!"DRAFT".equals(head.getStatus())) {
+            throw new ServiceException("仅草稿可确认", 40902);
+        }
+        confirmInternal(head);
+    }
+
+    private void confirmInternal(FinReceipt head) {
+        // 先验后核：Σalloc=amount 校验通过后再逐行 settle，避免部分核销后回滚依赖
+        List<FinReceiptAlloc> pending = allocMapper.selectList(new LambdaQueryWrapper<FinReceiptAlloc>()
+            .eq(FinReceiptAlloc::getReceiptId, head.getId()));
+        BigDecimal sum = pending.stream()
+            .map(FinReceiptAlloc::getAmount)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (sum.compareTo(head.getAmount()) != 0) {
+            throw new ServiceException("核销明细合计(" + sum + ")必须等于收款金额(" + head.getAmount() + ")");
+        }
+        // 红字收款单（退款单）：对 alloc 台账做反核销（客户已付款项减少），语义与收款单相反
+        boolean negative = Integer.valueOf(1).equals(head.getNegative());
+        for (FinReceiptAlloc row : pending) {
+            if (negative) {
+                arApService.unsettle(row.getArApId(), row.getAmount());
+            } else {
+                arApService.settle(row.getArApId(), row.getAmount(), "AR", head.getCustomerId());
+            }
+        }
+        head.setStatus("CONFIRMED");
+        head.setConfirmedAt(new Date());
+        head.setConfirmedBy(currentUserId());
+        receiptMapper.updateById(head);
+    }
+
+    private void saveAllocations(Long receiptId, FinReceiptBo bo) {
+        allocMapper.delete(new LambdaQueryWrapper<FinReceiptAlloc>()
+            .eq(FinReceiptAlloc::getReceiptId, receiptId));
+        for (FinReceiptBo.AllocationBo alloc : bo.getAllocations()) {
+            FinReceiptAlloc row = new FinReceiptAlloc();
+            row.setReceiptId(receiptId);
+            row.setArApId(alloc.getArApId());
+            row.setAmount(alloc.getAmount().setScale(2, RoundingMode.HALF_UP));
+            allocMapper.insert(row);
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void withdraw(Long id) {
+        FinReceipt head = receiptMapper.selectById(id);
+        if (head == null) {
+            throw new ServiceException("收款单不存在");
+        }
+        if (!"CONFIRMED".equals(head.getStatus())) {
+            throw new ServiceException("仅已确认单据可撤回", 40902);
+        }
+        unsettleAll(head.getId());
+        head.setStatus("DRAFT");
+        head.setWithdrawnAt(new Date());
+        head.setWithdrawnBy(currentUserId());
+        receiptMapper.updateById(head);
+    }
+
+    private void unsettleAll(Long receiptId) {
+        List<FinReceiptAlloc> rows = allocMapper.selectList(new LambdaQueryWrapper<FinReceiptAlloc>()
+            .eq(FinReceiptAlloc::getReceiptId, receiptId));
+        FinReceipt head = receiptMapper.selectById(receiptId);
+        // 红字收款单撤回：回补原 AR 行 settled（对红字单的 unsettle 反向即 settle）
+        boolean negative = head != null && Integer.valueOf(1).equals(head.getNegative());
+        for (FinReceiptAlloc row : rows) {
+            if (negative) {
+                arApService.settle(row.getArApId(), row.getAmount(), "AR", head.getCustomerId());
+            } else {
+                arApService.unsettle(row.getArApId(), row.getAmount());
+            }
+        }
+        // 保留核销明细：撤回后单据回草稿，用户可直接重新确认；
+        // 终态作废时才由 voidBill 物理清理。
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void voidBill(Long id) {
+        FinReceipt head = receiptMapper.selectById(id);
+        if (head == null) {
+            throw new ServiceException("收款单不存在");
+        }
+        if ("VOID".equals(head.getStatus())) {
+            throw new ServiceException("单据已作废");
+        }
+        // DRAFT 草稿不再走作废：草稿应走删除（逻辑删除），作废会把草稿固化成终态单据并占用唯一键
+        if (!"CONFIRMED".equals(head.getStatus())) {
+            throw new ServiceException("草稿单据请使用删除", 40902);
+        }
+        // CONFIRMED：先撤回反核销回草稿，再置作废
+        withdraw(id);
+        // 作废清理草稿期残留核销明细，避免 VOID 单展示误导
+        allocMapper.delete(new LambdaQueryWrapper<FinReceiptAlloc>()
+            .eq(FinReceiptAlloc::getReceiptId, id));
+        head = receiptMapper.selectById(id);
+        head.setStatus("VOID");
+        head.setVoidedAt(new Date());
+        head.setVoidedBy(currentUserId());
+        receiptMapper.updateById(head);
+    }
+
+    /**
+     * 账户引用写入（DOC/25 §3.6）：accountId 非空时写 account_id 并回填账户名称到 account 展示列；
+     * 为空（存量草稿）时保留原 account 文本不动。
+     */
+    private void applyAccount(FinReceipt head, Long accountId, String accountText) {
+        if (accountId != null) {
+            org.erp.fin.domain.FinAccount acc = accountMapper.selectById(accountId);
+            if (acc == null) {
+                throw new ServiceException("结算账户不存在：" + accountId);
+            }
+            head.setAccountId(accountId);
+            head.setAccount(acc.getName());
+        } else if (head.getAccountId() == null && accountText != null) {
+            head.setAccount(accountText);
+        }
+    }
+
+    private Long currentUserId() {
+        try {
+            return LoginHelper.getUserId();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * 删除草稿收款单（逻辑删除）。
+     *
+     * 规则：
+     * - 仅 DRAFT 可删，CONFIRMED/VOID 一律 40902 拒绝；
+     * - 逻辑删除（del_flag=1），主表与核销明细一并逻辑删除，不物理 DELETE；
+     * - 单号不回收（uk_fin_receipt_no 含已删行，新建同名单号会被唯一键挡住）；
+     * - 草稿未核销过台账（核销只在确认时发生），无需反核销。
+     *
+     * @param id 收款单ID
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteDraft(Long id) {
+        FinReceipt head = receiptMapper.selectById(id);
+        if (head == null) {
+            throw new ServiceException("收款单不存在");
+        }
+        if (!"DRAFT".equals(head.getStatus())) {
+            throw new ServiceException("仅草稿单据可删除，已确认/已作废单据请先撤回或作废处理", 40902);
+        }
+        // 明细一并逻辑删除，避免残留核销行影响后续查询
+        allocMapper.delete(new LambdaQueryWrapper<FinReceiptAlloc>()
+            .eq(FinReceiptAlloc::getReceiptId, id));
+        receiptMapper.deleteById(id);
+    }
+}
