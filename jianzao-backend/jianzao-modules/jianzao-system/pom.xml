@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>org.dromara</groupId>
+        <artifactId>jianzao-modules</artifactId>
+        <version>${revision}</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>jianzao-system</artifactId>
+
+    <description>
+        system系统模块
+    </description>
+
+    <dependencies>
+        <!-- 通用工具-->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>jianzao-common-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>jianzao-common-doc</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>jianzao-common-mybatis</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>jianzao-common-translation</artifactId>
+        </dependency>
+
+        <!-- OSS功能模块 -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>jianzao-common-oss</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>jianzao-common-log</artifactId>
+        </dependency>
+
+        <!-- excel-->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>jianzao-common-excel</artifactId>
+        </dependency>
+
+        <!-- SMS功能模块 -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>jianzao-common-sms</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>jianzao-common-tenant</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>jianzao-common-security</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>jianzao-common-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>jianzao-common-idempotent</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>jianzao-common-sensitive</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>jianzao-common-encrypt</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>jianzao-common-websocket</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>jianzao-common-sse</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- 单元测试 Mock 依赖（Mapper/Service 隔离） -->
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
+
+</project>

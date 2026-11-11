@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" role="img" aria-label="无访问权限">
+  <rect width="320" height="200" rx="12" fill="#f2f5fa"/>
+  <text x="160" y="105" text-anchor="middle" font-size="42" font-family="system-ui" fill="#8a94a6">401</text>
+  <text x="160" y="140" text-anchor="middle" font-size="14" font-family="system-ui" fill="#8a94a6">无访问权限</text>
+</svg>

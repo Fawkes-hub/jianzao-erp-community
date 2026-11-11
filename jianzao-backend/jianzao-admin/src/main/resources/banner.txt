@@ -1,0 +1,8 @@
+     _ ___   _   _  _ _____   _   ___     ___ ___ ___
+  _ | |_ _| /_\ | \| |_  //  /_\ / _ \   | __| _ \ _ \
+ | || || | / _ \| .` |/ // _/ _ \ (_) |  | _||   /  _/
+  \__/|___/_/ \_\_|\_/___/__/_/ \_\___/   |___|_|_\_|
+
+:: 简造ERP社区版 (Jianzao ERP Community) ::
+:: Application Version: ${revision} ::
+:: Spring Boot Version: ${spring-boot.version} ::

@@ -1,0 +1,176 @@
+--- # 本地 Windows 单机包配置（spring.profiles.active=winlocal）
+# 由 deploy/local-win/ 构建产物的 ERP.exe 编排启动，MySQL/Redis 均只绑定 127.0.0.1
+server:
+  # 对外唯一端口（frpc 只需映射此端口）
+  port: 16866
+  # 2~3 人使用，收缩 Undertow 线程，默认 256 个 worker 对 4G 机器过重
+  undertow:
+    threads:
+      io: 2
+      worker: 16
+
+--- # 登录验证码：本地包显式开启，避免 16866 映射公网后被暴力破解
+captcha:
+  enable: true
+  type: math
+  numberLength: 1
+  charLength: 4
+
+--- # 临时文件与静态资源：页面由本服务直接托管（前端 hash 路由，无需 SPA 回落）
+spring:
+  servlet:
+    multipart:
+      location: ./data/temp
+  mvc:
+    static-path-pattern: /**
+  web:
+    resources:
+      static-locations: file:./app/dist/, classpath:/META-INF/resources/, classpath:/resources/, classpath:/static/, classpath:/public/
+
+--- # 监控中心配置（本地包不启用）
+spring.boot.admin.client:
+  enabled: false
+  username: @monitor.username@
+  password: @monitor.password@
+
+--- # 数据源配置（包内绿色版 MySQL，端口 33306）
+spring:
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    dynamic:
+      p6spy: false
+      primary: master
+      strict: true
+      datasource:
+        master:
+          type: ${spring.datasource.type}
+          driverClassName: com.mysql.cj.jdbc.Driver
+          url: jdbc:mysql://127.0.0.1:33306/erp?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true
+          username: erp
+          password: erp-local-2026
+      hikari:
+        # 本地单机收缩连接池，给老电脑省内存
+        maxPoolSize: 5
+        minIdle: 1
+        connectionTimeout: 30000
+        validationTimeout: 5000
+        idleTimeout: 600000
+        maxLifetime: 1800000
+        keepaliveTime: 30000
+
+--- # redis 单机配置（包内绿色版 Redis，端口 16379）
+spring.data:
+  redis:
+    host: 127.0.0.1
+    port: 16379
+    database: 0
+    password: erp-local-2026
+    timeout: 10s
+    ssl.enabled: false
+
+# redisson 配置（本地单机收缩线程与连接池）
+redisson:
+  keyPrefix:
+  threads: 2
+  nettyThreads: 2
+  singleServerConfig:
+    clientName: RuoYi-Vue-Plus
+    connectionMinimumIdleSize: 2
+    connectionPoolSize: 8
+    idleConnectionTimeout: 10000
+    timeout: 3000
+    subscriptionConnectionPoolSize: 4
+
+--- # 本地页面匿名放行路径（profile 覆盖基础清单，补齐静态资源）
+security:
+  excludes:
+    - /
+    - /*.html
+    - /**/*.html
+    - /**/*.css
+    - /**/*.js
+    - /**/*.mjs
+    - /**/*.map
+    - /**/*.ico
+    - /**/*.png
+    - /**/*.jpg
+    - /**/*.jpeg
+    - /**/*.gif
+    - /**/*.svg
+    - /**/*.webp
+    - /**/*.woff
+    - /**/*.woff2
+    - /**/*.ttf
+    - /favicon.ico
+    - /error
+    - /*/api-docs
+    - /*/api-docs/**
+
+--- # 接口加密（与前端 VITE_APP_ENCRYPT=false 对应，本地包关闭）
+api-decrypt:
+  enabled: false
+
+--- # mail 邮件发送（本地包未启用）
+mail:
+  enabled: false
+  host: smtp.163.com
+  port: 465
+  auth: true
+  from: xxx@163.com
+  user: xxx@163.com
+  pass: xxxxxxxxxx
+  starttlsEnable: true
+  sslEnable: true
+  timeout: 0
+  connectionTimeout: 0
+
+--- # sms 短信（本地包未启用）
+sms:
+  config-type: yaml
+  restricted: true
+  minute-max: 1
+  account-max: 30
+  blends:
+    config1:
+      supplier: alibaba
+      access-key-id: 您的accessKey
+      access-key-secret: 您的accessKeySecret
+      signature: 您的短信签名
+      sdk-app-id: 您的sdkAppId
+    config2:
+      supplier: tencent
+      access-key-id: 您的accessKey
+      access-key-secret: 您的accessKeySecret
+      signature: 您的短信签名
+      sdk-app-id: 您的sdkAppId
+
+--- # 单机安全基线：JWT 密钥由启动器按安装随机生成并通过命令行注入，不回落仓库内置值
+sa-token:
+  jwt-secret-key: ${SA_TOKEN_JWT_SECRET_KEY}
+
+--- # 接口文档与监控端点：单机包不生成 API 文档，只保留健康检查
+springdoc:
+  api-docs:
+    enabled: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+--- # ERP 版本与自动全量备份（本地单机）
+# erp.home 由启动器以 -Derp.home=<安装目录> 注入
+# 备份落在 data/backup，升级保留 data/ 时备份不会丢
+erp:
+  version: ${ERP_VERSION:unknown}
+  backup:
+    enabled: ${ERP_BACKUP_ENABLED:true}
+    dir: "${erp.home:.}/data/backup"
+    cron: "${ERP_BACKUP_CRON:0 0 2 * * ?}"
+    retention-days: ${ERP_BACKUP_RETENTION_DAYS:30}
+    mysqldump: "${erp.home:.}/mysql/bin/mysqldump.exe"
+    timeout-seconds: ${ERP_BACKUP_TIMEOUT_SECONDS:300}

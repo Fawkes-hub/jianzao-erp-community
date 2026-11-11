@@ -1,0 +1,479 @@
+// 全局SCSS变量
+:root {
+  --menuBg: #1f2d3d;
+  --menuColor: #bfcbd9;
+  --menuActiveText: #f4f4f5;
+  --menuHover: #263445;
+
+  --subMenuBg: #1f2d3d;
+  --subMenuActiveText: #f4f4f5;
+  --subMenuHover: #001528;
+  --subMenuTitleHover: #293444;
+
+  // 菜单栏缩进
+  --el-menu-base-level-padding: 12px;
+  --el-menu-level-padding: 8px;
+  --el-menu-item-height: 50px;
+
+  --fixedHeaderBg: #ffffff;
+  --tableHeaderBg: #f8f8f9;
+  --tableHeaderTextColor: #515a6e;
+
+  // ele
+  --brder-color: #e8e8e8;
+
+  // 添加 tag 相关变量
+  --tags-view-active-bg: var(--el-color-primary);
+  --tags-view-active-border-color: var(--el-color-primary);
+
+  // Modern rounded style + soft shadows
+  --app-radius-base: 8px;
+  --app-radius-sm: calc(var(--app-radius-base) * 0.6);
+  --app-radius-md: var(--app-radius-base);
+  // 卡片档圆角，比控件大一档（与 Settings 面板滑条 val*1.4 同口径；此处不得重复声明覆盖）
+  --app-radius-lg: calc(var(--app-radius-base) * 1.4);
+  --app-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.08), 0 6px 16px rgba(15, 23, 42, 0.08);
+  --app-shadow-md: 0 8px 24px rgba(15, 23, 42, 0.12);
+  --app-shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.16);
+  --app-surface-bg: #ffffff;
+  --app-surface-border: var(--el-border-color-lighter);
+
+  // 间距刻度：业务页唯一的留白来源，替代散落的 mb8 / mb-[10px] / style="margin:…"
+  --app-space-1: 4px;
+  --app-space-2: 8px;
+  --app-space-3: 12px;
+  --app-space-4: 16px;
+  --app-space-5: 20px;
+  --app-space-6: 24px;
+  --app-space-7: 32px;
+  --app-space-8: 40px;
+
+  // 字号阶梯：正文不低于 14px；区块标题 16/600、页面标题 18/600
+  --app-font-xs: 12px;
+  --app-font-sm: 13px;
+  --app-font-base: 14px;
+  --app-font-lg: 16px;
+  --app-font-page-title: 18px;
+
+  // 功能色「当文字用」的档位（DOC/32 §5 L3）
+  // 实测：Element 的 dark-2 在白底只有 3.35~4.36:1，全部不达 WCAG AA 4.5:1；
+  // 且 Settings 面板会把 primary 整套色阶内联写死，暗色档下 primary-dark-2 仍是亮色值（3.97:1）。
+  // 因此这里直接给出两档各自达标色，不依赖 EP 色阶变量：亮色档取实测 ≥4.5 的暗色，暗色档用 base 亮色（5.76~7.63:1）。
+  --app-text-primary: #2c6eb2;
+  --app-text-success: #3f7a22;
+  --app-text-warning: #9a6b26;
+  --app-text-danger: #b74b4b;
+
+  // 焦点环：原 light-8 在白底约 1.2:1 近乎不可见，改为外晕 + 内沿实边
+  --app-focus-ring: 0 0 0 2px var(--el-color-primary-light-5), inset 0 0 0 1px var(--el-color-primary);
+
+  // TDesign 视觉语言层（DOC/34 §7）：与组件库解耦，工作台 / 列表 / 详情共用，亮暗两档同步
+  // 表面层级：页面底色 → 卡片 → 主卡（品牌渐变）→ 悬浮态
+  --app-surface-elevated: var(--el-bg-color);
+  --app-surface-hero-from: #0052d9;
+  --app-surface-hero-to: #2f6bff;
+  --app-surface-warn-from: #fff7e8;
+  --app-surface-warn-to: #ffedc8;
+  --app-shadow-elevated: 0 6px 22px rgba(25, 42, 86, 0.07);
+  --app-shadow-elevated-hover: 0 12px 30px rgba(25, 42, 86, 0.13);
+  --app-radius-surface: 16px;
+  --app-chart-sales: #2f5bdb;
+  --app-chart-cost: #f08a5b;
+  --app-chart-receipts: #38b48b;
+  --app-chart-profit: #e0a63c;
+
+  // Element Plus tokens
+  // T6 全局收口：element-plus/dist/index.css 移除后，--el-* 仍作为本仓自有设计 token 使用
+  // （全 src/ 去重 27 个 var(--el-*) 引用；theme.ts 运行时还会 setProperty 覆盖 primary 整套色阶）。
+  // 以下为 EP 亮色档 :root 默认原值照抄（源自 node_modules/element-plus/theme-chalk/base.css 的 :root），
+  // 保证移除依赖后零视觉回归；仅保留 --el-* 命名，不重命名为 --td-*。
+  --el-color-primary: #409eff;
+  --el-color-primary-light-2: #66b1ff;
+  --el-color-primary-light-3: #79bbff;
+  --el-color-primary-light-5: #a0cfff;
+  --el-color-primary-dark-6: #193f66;
+  --el-color-primary-dark-7: #132f4c;
+  --el-color-primary-dark-9: #060f19;
+  --el-color-success: #67c23a;
+  --el-color-warning: #e6a23c;
+  --el-color-danger: #f56c6c;
+  --el-color-info: #909399;
+  --el-color-white: #fff;
+  --el-text-color: var(--el-text-color-regular);
+  --el-text-color-primary: #303133;
+  --el-text-color-regular: #606266;
+  --el-text-color-secondary: #909399;
+  --el-text-color-placeholder: #a8abb2;
+  --el-border-color: #dcdfe6;
+  --el-border-color-light: #e4e7ed;
+  --el-border-color-lighter: #ebeef5;
+  --el-bg-color: #fff;
+  --el-fill-color-blank: #fff;
+  --el-fill-color-light: #f5f7fa;
+  --el-fill-color-lighter: #fafafa;
+  --el-menu-active-color: var(--el-color-primary);
+
+  // 本仓对 EP 默认值的既有覆盖（沿用现代圆角 / 柔和阴影），必须放在基础 token 之后
+  --el-border-radius-base: var(--app-radius-md);
+  --el-border-radius-small: var(--app-radius-sm);
+  --el-border-radius-round: 999px;
+  --el-box-shadow-light: var(--app-shadow-sm);
+  --el-box-shadow: var(--app-shadow-md);
+  --el-bg-color-page: #f5f7fb;
+}
+
+html.dark {
+  --menuBg: #1d1e1f;
+  --menuColor: #bfcbd9;
+  --menuActiveText: #f4f4f5;
+  --menuHover: #171819;
+
+  --subMenuBg: #1d1e1f;
+  --subMenuActiveText: #f4f4f5;
+  --subMenuHover: #171819;
+  --subMenuTitleHover: #171819;
+
+  --fixedHeaderBg: #171819;
+  --tableHeaderBg: var(--el-bg-color);
+  --tableHeaderTextColor: var(--el-text-color);
+
+  // 暗色基础背景与文字
+  --el-bg-color: #171819;
+  --el-bg-color-overlay: #1d1e1f;
+  --el-fill-color-blank: #171819;
+  --el-fill-color-light: #262727;
+  --el-fill-color-lighter: #202124;
+  --el-border-color: #37373a;
+  --el-border-color-light: #2c2d30;
+  --el-border-color-lighter: #242528;
+  --el-text-color-primary: #e5eaf3;
+  --el-text-color-regular: #cfd3dc;
+  --el-text-color-secondary: #909399;
+  --el-text-color-placeholder: #6c6e72;
+
+  // 覆盖ele 高亮当前行的标准暗色
+  .el-tree-node__content {
+    --el-color-primary-light-9: #262727;
+  }
+
+  .el-table {
+    --el-table-current-row-bg-color: var(--el-color-primary-dark-7)
+  }
+
+  .el-dropdown__popper {
+    --el-dropdown-menuItem-hover-fill: var(--el-color-primary-dark-7)
+  }
+
+  .el-button {
+    --el-button-hover-bg-color: var(--el-color-primary-dark-9);
+    --el-button-hover-border-color: var(--el-color-primary-dark-7);
+  }
+
+  .el-button.is-plain {
+    --el-button-hover-bg-color: var(--el-fill-color-light);
+    --el-button-hover-border-color: var(--el-color-primary);
+  }
+
+  .el-button.is-dashed {
+    --el-button-hover-bg-color: var(--el-fill-color-light);
+    --el-button-hover-border-color: var(--el-color-primary);
+  }
+
+  .el-button--primary {
+    --el-button-bg-color: #2b6bd3;
+    --el-button-border-color: #3a7be8;
+    --el-button-text-color: #eef4ff;
+    --el-button-hover-bg-color: #3a7be8;
+    --el-button-hover-border-color: #3a7be8;
+    --el-button-active-bg-color: #255fb8;
+    --el-button-active-border-color: #255fb8;
+  }
+
+  .el-button--primary.is-plain {
+    --el-button-bg-color: rgba(43, 107, 211, 0.12);
+    --el-button-border-color: rgba(58, 123, 232, 0.5);
+    --el-button-text-color: #dbe8ff;
+    --el-button-hover-text-color: var(--el-color-white);
+    --el-button-hover-bg-color: var(--el-color-primary);
+    --el-button-hover-border-color: var(--el-color-primary);
+    --el-button-active-bg-color: rgba(43, 107, 211, 0.28);
+    --el-button-active-border-color: rgba(43, 107, 211, 0.8);
+  }
+
+  .el-button--primary.is-dashed {
+    --el-button-bg-color: rgba(43, 107, 211, 0.12);
+    --el-button-border-color: rgba(58, 123, 232, 0.5);
+    --el-button-text-color: #dbe8ff;
+    --el-button-hover-text-color: #dbe8ff;
+    --el-button-hover-bg-color: rgba(58, 123, 232, 0.2);
+    --el-button-hover-border-color: rgba(58, 123, 232, 0.7);
+    --el-button-active-bg-color: rgba(43, 107, 211, 0.28);
+    --el-button-active-border-color: rgba(43, 107, 211, 0.8);
+  }
+
+  .el-button--success {
+    --el-button-bg-color: #1f8a5a;
+    --el-button-border-color: #29a46d;
+    --el-button-text-color: #eefaf4;
+    --el-button-hover-bg-color: #29a46d;
+    --el-button-hover-border-color: #29a46d;
+    --el-button-active-bg-color: #1b784f;
+    --el-button-active-border-color: #1b784f;
+  }
+
+  .el-button--success.is-plain {
+    --el-button-bg-color: rgba(31, 138, 90, 0.12);
+    --el-button-border-color: rgba(41, 164, 109, 0.5);
+    --el-button-text-color: #dbf6e8;
+    --el-button-hover-text-color: var(--el-color-white);
+    --el-button-hover-bg-color: var(--el-color-success);
+    --el-button-hover-border-color: var(--el-color-success);
+    --el-button-active-bg-color: rgba(31, 138, 90, 0.28);
+    --el-button-active-border-color: rgba(31, 138, 90, 0.8);
+  }
+
+  .el-button--success.is-dashed {
+    --el-button-bg-color: rgba(31, 138, 90, 0.12);
+    --el-button-border-color: rgba(41, 164, 109, 0.5);
+    --el-button-text-color: #dbf6e8;
+    --el-button-hover-text-color: #dbf6e8;
+    --el-button-hover-bg-color: rgba(41, 164, 109, 0.2);
+    --el-button-hover-border-color: rgba(41, 164, 109, 0.7);
+    --el-button-active-bg-color: rgba(31, 138, 90, 0.28);
+    --el-button-active-border-color: rgba(31, 138, 90, 0.8);
+  }
+
+  .el-button--warning {
+    --el-button-bg-color: #b87922;
+    --el-button-border-color: #d6953b;
+    --el-button-text-color: #fff7e6;
+    --el-button-hover-bg-color: #d6953b;
+    --el-button-hover-border-color: #d6953b;
+    --el-button-active-bg-color: #a56c1d;
+    --el-button-active-border-color: #a56c1d;
+  }
+
+  .el-button--warning.is-plain {
+    --el-button-bg-color: rgba(184, 121, 34, 0.12);
+    --el-button-border-color: rgba(214, 149, 59, 0.5);
+    --el-button-text-color: #ffecc8;
+    --el-button-hover-text-color: var(--el-color-white);
+    --el-button-hover-bg-color: var(--el-color-warning);
+    --el-button-hover-border-color: var(--el-color-warning);
+    --el-button-active-bg-color: rgba(184, 121, 34, 0.28);
+    --el-button-active-border-color: rgba(184, 121, 34, 0.8);
+  }
+
+  .el-button--warning.is-dashed {
+    --el-button-bg-color: rgba(184, 121, 34, 0.12);
+    --el-button-border-color: rgba(214, 149, 59, 0.5);
+    --el-button-text-color: #ffecc8;
+    --el-button-hover-text-color: #ffecc8;
+    --el-button-hover-bg-color: rgba(214, 149, 59, 0.2);
+    --el-button-hover-border-color: rgba(214, 149, 59, 0.7);
+    --el-button-active-bg-color: rgba(184, 121, 34, 0.28);
+    --el-button-active-border-color: rgba(184, 121, 34, 0.8);
+  }
+
+  .el-button--danger {
+    --el-button-bg-color: #b24a4a;
+    --el-button-border-color: #d16060;
+    --el-button-text-color: #ffecec;
+    --el-button-hover-bg-color: #d16060;
+    --el-button-hover-border-color: #d16060;
+    --el-button-active-bg-color: #9c3f3f;
+    --el-button-active-border-color: #9c3f3f;
+  }
+
+  .el-button--danger.is-plain {
+    --el-button-bg-color: rgba(178, 74, 74, 0.12);
+    --el-button-border-color: rgba(209, 96, 96, 0.5);
+    --el-button-text-color: #ffd6d6;
+    --el-button-hover-text-color: var(--el-color-white);
+    --el-button-hover-bg-color: var(--el-color-danger);
+    --el-button-hover-border-color: var(--el-color-danger);
+    --el-button-active-bg-color: rgba(178, 74, 74, 0.28);
+    --el-button-active-border-color: rgba(178, 74, 74, 0.8);
+  }
+
+  .el-button--danger.is-dashed {
+    --el-button-bg-color: rgba(178, 74, 74, 0.12);
+    --el-button-border-color: rgba(209, 96, 96, 0.5);
+    --el-button-text-color: #ffd6d6;
+    --el-button-hover-text-color: #ffd6d6;
+    --el-button-hover-bg-color: rgba(209, 96, 96, 0.2);
+    --el-button-hover-border-color: rgba(209, 96, 96, 0.7);
+    --el-button-active-bg-color: rgba(178, 74, 74, 0.28);
+    --el-button-active-border-color: rgba(178, 74, 74, 0.8);
+  }
+
+  .el-button--info {
+    --el-button-bg-color: #4b5563;
+    --el-button-border-color: #667085;
+    --el-button-text-color: #f3f4f6;
+    --el-button-hover-bg-color: #667085;
+    --el-button-hover-border-color: #667085;
+    --el-button-active-bg-color: #3f4753;
+    --el-button-active-border-color: #3f4753;
+  }
+
+  .el-button--info.is-plain {
+    --el-button-bg-color: rgba(75, 85, 99, 0.16);
+    --el-button-border-color: rgba(102, 112, 133, 0.55);
+    --el-button-text-color: #e5e7eb;
+    --el-button-hover-text-color: var(--el-color-white);
+    --el-button-hover-bg-color: var(--el-color-info);
+    --el-button-hover-border-color: var(--el-color-info);
+    --el-button-active-bg-color: rgba(75, 85, 99, 0.3);
+    --el-button-active-border-color: rgba(75, 85, 99, 0.85);
+  }
+
+  .el-button--info.is-dashed {
+    --el-button-bg-color: rgba(75, 85, 99, 0.16);
+    --el-button-border-color: rgba(102, 112, 133, 0.55);
+    --el-button-text-color: #e5e7eb;
+    --el-button-hover-text-color: #e5e7eb;
+    --el-button-hover-bg-color: rgba(102, 112, 133, 0.22);
+    --el-button-hover-border-color: rgba(102, 112, 133, 0.75);
+    --el-button-active-bg-color: rgba(75, 85, 99, 0.3);
+    --el-button-active-border-color: rgba(75, 85, 99, 0.85);
+  }
+
+  .el-switch {
+    --el-switch-on-color: var(--el-color-primary-dark-6);
+    --el-switch-border-color: var(--el-color-primary-light-2);
+  }
+
+  .el-tag--primary {
+    --el-tag-bg-color: var(--el-color-primary-dark-6);
+    --el-tag-border-color: var(--el-color-primary-light-2);
+  }
+
+  .el-tag--success {
+    --el-tag-bg-color: rgba(31, 138, 90, 0.18);
+    --el-tag-border-color: rgba(41, 164, 109, 0.6);
+    --el-tag-text-color: #c7f2df;
+  }
+
+  .el-tag--warning {
+    --el-tag-bg-color: rgba(184, 121, 34, 0.18);
+    --el-tag-border-color: rgba(214, 149, 59, 0.6);
+    --el-tag-text-color: #ffe6bb;
+  }
+
+  .el-tag--danger {
+    --el-tag-bg-color: rgba(178, 74, 74, 0.18);
+    --el-tag-border-color: rgba(209, 96, 96, 0.6);
+    --el-tag-text-color: #ffd0d0;
+  }
+
+  .el-tag--info {
+    --el-tag-bg-color: rgba(75, 85, 99, 0.18);
+    --el-tag-border-color: rgba(102, 112, 133, 0.6);
+    --el-tag-text-color: #e5e7eb;
+  }
+
+  // 在深色模式下使用更深的颜色
+  --tags-view-active-bg: var(--el-color-primary-dark-6);
+  --tags-view-active-border-color: var(--el-color-primary-light-2);
+
+  // Modern rounded style + soft shadows (dark)
+  --app-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.28), 0 8px 18px rgba(0, 0, 0, 0.25);
+  --app-shadow-md: 0 10px 26px rgba(0, 0, 0, 0.35);
+  --app-shadow-lg: 0 14px 34px rgba(0, 0, 0, 0.4);
+  --app-surface-bg: #151922;
+  --app-surface-border: var(--el-border-color);
+
+  // 暗色档：深底上功能色文字必须用亮的 base 色（实测 5.76~7.63:1），暗色档的 dark-2 反而欠对比
+  --app-text-primary: #409eff;
+  --app-text-success: #67c23a;
+  --app-text-warning: #e6a23c;
+  --app-text-danger: #f56c6c;
+  --el-bg-color-page: #0f1115;
+  // 暗色档：深底上不用纯白渐变主卡（会刺眼），改为品牌色透明叠层；图表色板同步提亮
+  --app-surface-elevated: #1b2030;
+  --app-surface-hero-from: #1b4796;
+  --app-surface-hero-to: #3a6bd8;
+  --app-surface-warn-from: #3a2f1c;
+  --app-surface-warn-to: #4a3a20;
+  --app-shadow-elevated: 0 6px 22px rgba(0, 0, 0, 0.32);
+  --app-shadow-elevated-hover: 0 12px 30px rgba(0, 0, 0, 0.45);
+  --app-chart-sales: #7ba0ff;
+  --app-chart-cost: #f2a579;
+  --app-chart-receipts: #6fd6b2;
+  --app-chart-profit: #f0c268;
+
+  // vxe-table 主题
+  --vxe-font-color: #98989e;
+  --vxe-primary-color: #2c7ecf;
+  --vxe-icon-background-color: #98989e;
+  --vxe-table-font-color: #98989e;
+  --vxe-table-resizable-color: #95969a;
+  --vxe-table-header-background-color: #28282a;
+  --vxe-table-body-background-color: #151518;
+  --vxe-table-background-color: #4a5663;
+  --vxe-table-border-width: 1px;
+  --vxe-table-border-color: #37373a;
+  --vxe-toolbar-background-color: #37373a;
+
+  // ele
+  --brder-color: #37373a;
+}
+
+// base color
+$blue: #324157;
+$light-blue: #3a71a8;
+$red: #c03639;
+$pink: #e65d6e;
+$green: #30b08f;
+$tiffany: #4ab7bd;
+$yellow: #fec171;
+$panGreen: #30b08f;
+
+// 默认菜单主题风格
+$base-menu-color: var(--menuColor);
+$base-menu-hover: var(--menuHover);
+$base-menu-color-active: var(--menuActiveText);
+$base-menu-background: var(--menuBg);
+$base-logo-title-color: #ffffff;
+
+// 浅色侧栏为默认档：白底 + 正文墨色，选中项走品牌蓝（与登录页同一色板）
+$base-menu-light-color: #434654;
+$base-menu-light-background: #ffffff;
+$base-logo-light-title-color: #181c23;
+
+$base-sub-menu-background: var(--subMenuBg);
+$base-sub-menu-hover: var(--subMenuHover);
+$base-sub-menu-title-hover: var(--subMenuTitleHover);
+// 表单头背景色和标题颜色
+$fixed-header-bg: var(--fixedHeaderBg);
+$table-header-bg: var(--tableHeaderBg);
+$table-header-text-color: var(--tableHeaderTextColor);
+
+$--color-primary: #409eff;
+$--color-success: #67c23a;
+$--color-warning: #e6a23c;
+$--color-danger: #f56c6c;
+$--color-info: #909399;
+
+$base-sidebar-width: 200px;
+
+// the :export directive is the magic sauce for webpack
+// https://www.bluematador.com/blog/how-to-share-variables-between-js-and-sass
+:export {
+  menuColor: $base-menu-color;
+  menuLightColor: $base-menu-light-color;
+  menuColorActive: $base-menu-color-active;
+  menuBackground: $base-menu-background;
+  menuLightBackground: $base-menu-light-background;
+  subMenuBackground: $base-sub-menu-background;
+  subMenuHover: $base-sub-menu-hover;
+  sideBarWidth: $base-sidebar-width;
+  logoTitleColor: $base-logo-title-color;
+  logoLightTitleColor: $base-logo-light-title-color;
+  primaryColor: $--color-primary;
+  successColor: $--color-success;
+  dangerColor: $--color-danger;
+  infoColor: $--color-info;
+  warningColor: $--color-warning;
+}

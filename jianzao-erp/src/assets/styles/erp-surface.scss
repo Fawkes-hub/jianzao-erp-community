@@ -1,0 +1,363 @@
+// TDesign 全量迁移期的 token 桥接（DOC/35 §3）：让 TDesign 组件直接消费已有的 --app-* 视觉语言，
+// 避免 --td-* 与 --app-* 两套色板分叉。T6 移除 Element Plus 后本段仍保留。
+// 注意：TDesign 组件变量定义在 :root(0,1,0)，必须用 html:root(0,1,1) 才能压过；
+// 裸 html(0,0,1) 特异性更低会被覆盖（DOC/32 §12.1 同类教训，2026-11-05 实测 --td-brand-color 被抢回 #0052d9）。
+html:root {
+  --td-brand-color: var(--app-surface-hero-from);
+  --td-brand-color-hover: var(--app-surface-hero-to);
+  --td-radius-default: var(--app-radius-md);
+  --td-radius-medium: var(--app-radius-surface);
+  --td-shadow-1: var(--app-shadow-elevated);
+  --td-shadow-2: var(--app-shadow-elevated-hover);
+}
+
+// ERP 视觉语言层 L1（DOC/34 §7）：与 Element Plus / TDesign 组件库解耦的语义 class。
+// 阶段一消费方：views/erp/dashboard；阶段二推广到列表 / 详情 / 弹窗时直接复用本文件，不重做 token。
+// 所有颜色、阴影、圆角均取自 variables.module.scss 的 --app-*，亮暗两档自动跟随。
+
+// 表面容器：无描边、多层柔阴影、16px 圆角，替代「1px 细线 + 白底」的传统卡片
+.erp-surface {
+  background: var(--app-surface-elevated);
+  border: 0;
+  border-radius: var(--app-radius-surface);
+  box-shadow: var(--app-shadow-elevated);
+  transition: box-shadow 0.24s cubic-bezier(0.38, 0, 0.24, 1), transform 0.24s cubic-bezier(0.38, 0, 0.24, 1);
+
+  &:hover {
+    box-shadow: var(--app-shadow-elevated-hover);
+    transform: translateY(-2px);
+  }
+}
+
+// KPI 卡：品牌主卡 + 警示卡 + 常规卡三态；数字等宽防抖动
+.erp-kpi {
+  position: relative;
+  padding: 18px;
+  border-radius: var(--app-radius-surface);
+  background: var(--app-surface-elevated);
+  box-shadow: var(--app-shadow-elevated);
+  cursor: pointer;
+  transition: box-shadow 0.24s cubic-bezier(0.38, 0, 0.24, 1), transform 0.24s cubic-bezier(0.38, 0, 0.24, 1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 132px;
+  overflow: hidden;
+
+  &:hover {
+    box-shadow: var(--app-shadow-elevated-hover);
+    transform: translateY(-2px);
+  }
+}
+
+.erp-kpi__label {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  position: relative;
+  z-index: 1;
+}
+
+.erp-kpi__value {
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--el-text-color-primary);
+  font-variant-numeric: tabular-nums;
+  position: relative;
+  z-index: 1;
+}
+
+.erp-kpi__extra {
+  font-size: 12px;
+  color: var(--el-text-color-placeholder);
+  position: relative;
+  z-index: 1;
+}
+
+// 主卡：品牌渐变反色（对应 TDesign Starter 的 dashboard-item--main-color）
+.erp-kpi--hero {
+  background: linear-gradient(140deg, var(--app-surface-hero-from), var(--app-surface-hero-to));
+  color: #fff;
+
+  .erp-kpi__label,
+  .erp-kpi__value,
+  .erp-kpi__extra {
+    color: #fff;
+  }
+
+  .erp-kpi__label,
+  .erp-kpi__extra {
+    opacity: 0.82;
+  }
+}
+
+// 警示卡：暖色渐变（本月毛利 / 库存预警等需要关注的指标）
+.erp-kpi--warn {
+  background: linear-gradient(140deg, var(--app-surface-warn-from), var(--app-surface-warn-to));
+}
+
+// 卡内右下角装饰圆（TDesign 的 item-left 圆形图标位，纯装饰）
+.erp-kpi__orb {
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(127, 160, 255, 0.14);
+  pointer-events: none;
+}
+
+.erp-kpi--hero .erp-kpi__orb {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+// 卡底部趋势条（本月销售完成度一类）
+.erp-kpi__meter {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(127, 160, 255, 0.18);
+  overflow: hidden;
+  margin-top: 12px;
+}
+
+.erp-kpi__meter-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--app-chart-sales);
+}
+
+.erp-kpi--hero .erp-kpi__meter {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.erp-kpi--hero .erp-kpi__meter-fill {
+  background: #fff;
+}
+
+// 面板标题：比传统「细线 + 加粗小字」更有层级
+.erp-panel-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+}
+
+.erp-panel-sub {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+// TDesign Starter 的 .row-container:not(:last-child){margin-bottom:16px} 规范：区块统一 16px 间距
+.erp-row-container {
+  margin-bottom: 16px;
+}
+
+// 面板（DOC/35 T0）：统一「最近单据 / 草稿待办 / 往来明细」等下半部分卡片，消除与上半 KPI 卡的混搭
+// 区块间距按 TDesign Starter 的 .row-container:not(:last-child){margin-bottom:16px} 规范
+.erp-panel {
+  padding: 16px 18px;
+  margin-bottom: 16px;
+}
+
+// TDesign 官方 Starter 排版规范（DOC/35 §12）：
+// 卡片无描边，标题 + 副标题在头部，筛选/操作放 #actions，条件项紧凑排布，区块间 16px
+.erp-filter-card {
+  padding: 0;
+  margin-bottom: 16px;
+
+  .t-card__header {
+    padding: 16px 18px 0;
+    border-bottom: 0;
+  }
+
+  .t-card__body {
+    padding: 12px 18px 16px;
+  }
+}
+
+.erp-filter-card .t-card__title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.erp-filter-card .t-card__subtitle {
+  font-size: 12px;
+  color: var(--td-text-color-secondary);
+}
+
+// 筛选条件行：label 与控件同一行、自动换行、控件间 16px、按钮靠右
+.erp-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 16px;
+}
+
+.erp-filter-row .t-form__item {
+  margin-bottom: 0;
+  min-width: 0;
+  flex: 0 0 auto;
+}
+
+.erp-filter-row .t-form__label {
+  width: auto;
+  white-space: nowrap;
+  padding-right: 8px;
+}
+
+// TDesign 的 .t-form__controls 默认 flex:0 1 auto，宽度随内容伸缩会把 .query-w-* 固定宽度压掉（实测 168/30/192/383px 乱掉）
+.erp-filter-row .t-form__controls {
+  min-width: 0;
+  flex: 0 0 auto;
+}
+
+// 全局表单行距：TDesign 默认 24px，业务表单字段密集，统一收到 20px（--app-space-5）。
+// 20px 仍能容纳 .t-input__extra 的 bottom:-20px 校验提示，避免提示压住下一行；如需更紧可改 --app-space-4（16px），但要同步调校验提示位置。
+// 查询区 .erp-filter-row 自己管理 0 间距，必须排除；inline 表单保持组件默认。
+.t-form:not(.t-form-inline):not(.erp-filter-row) .t-form__item {
+  margin-bottom: var(--app-space-5);
+}
+// 控件内嵌表单项（如横向组合）保持 0 下边距，只保留 TDesign 的右间距
+.t-form:not(.t-form-inline):not(.erp-filter-row) .t-form__controls .t-form__item {
+  margin-bottom: 0;
+}
+// 普通表单最后一项不留尾部空白；栅格表单由下方 --last 规则补回行距
+.t-form:not(.t-form-inline):not(.erp-filter-row) > .t-form__item:last-of-type {
+  margin-bottom: 0;
+}
+
+// 栅格表单（label 在上 + t-row/t-col 两列）的校验提示留白：
+// TDesign 按「同一父元素下最后一个表单项」判定 .t-form__item--last 并把 margin 归零（form.mjs refreshLastFormItem），
+// 而每个 t-col 里只有一个 item，于是全部命中 --last；绝对定位的 .t-input__extra（bottom: -20px）就会压住下一行标签。
+// 这里给栅格里的 item 统一补回 20px 下边距，提示落在这段留白内，且校验前后行高不跳动（选择性压过 .t-form:not(.t-form-inline) .t-form__item--last）。
+.t-form .t-row .t-form__item.t-form__item--last {
+  margin-bottom: var(--app-space-5);
+}
+
+.erp-filter-row .query-w-sm {
+  width: 140px;
+}
+
+.erp-filter-row .query-w-md {
+  width: 200px;
+}
+
+.erp-filter-row .query-w-lg {
+  width: 240px;
+}
+
+.erp-filter-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  align-self: flex-end;
+}
+
+// 图表卡片：TDesign Starter 的 .dashboard-chart-card 规范，图表容器在 body
+.erp-chart-card {
+  padding: 0;
+
+  .t-card__header {
+    padding: 16px 18px 0;
+    border-bottom: 0;
+  }
+
+  .t-card__body {
+    padding: 8px 18px 18px;
+  }
+}
+
+// TDesign 表格密度（DOC/35 §13）：t-size-s 默认 8px/12px 偏松，列表压到 6px/12px，
+// 配合 24px 图标按钮，行高由约 48px 降到 36px 左右，一屏多显两行。
+// 特异性需压过 element-ui.scss 的 html .erp-table.t-table th(0,2,2)，这里三个 class（0,3,1）。
+.erp-table.t-table.t-size-s th,
+.erp-table.t-table.t-size-s td {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.erp-table.t-table th {
+  color: var(--td-text-color-secondary);
+}
+
+.erp-table.t-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+// 明细工具条（开单页通用）：与上方表头用分隔线 + 20px 间距隔开，避免「添加明细」贴住上一个输入框
+.erp-detail-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 20px 0 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--td-border-level-1-color);
+}
+
+.erp-detail-bar__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--td-text-color-primary);
+}
+
+// 12px 次要文字：供已迁移页替掉 Tailwind 的 text-gray-400/500
+.erp-text-secondary {
+  font-size: 12px;
+  color: var(--td-text-color-secondary);
+}
+
+.erp-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+// 查询区面板：比数据面板稍紧凑，内部 .erp-search-form 继续负责 flex 换行与按钮靠右
+.erp-search-panel {
+  padding: 14px 18px;
+  margin-bottom: 10px;
+}
+
+.erp-panel__head .el-row {
+  flex: 1;
+}
+
+// 面板内表格：去掉 EP 默认边框感，与无描边表面统一；表头只用底色与细分隔线
+// 全局 scss 不能写 :deep()（那是 SFC scoped 语法，原样输出会成无效选择器），直接写后代选择器
+// 注意：ruoyi.scss 有全局 .el-table 规则，故这里对 th/td 直接设属性而非只改变量（实测变量会被抢回）
+.erp-table {
+  background: transparent;
+  border: 0;
+
+  .el-table__inner-wrapper::before {
+    display: none;
+  }
+
+  .el-table__header-wrapper th.el-table__cell {
+    background: transparent !important;
+    border-bottom: 1px solid var(--el-border-color-lighter) !important;
+    font-weight: 600;
+    color: var(--el-text-color-regular);
+  }
+
+  .el-table__body td.el-table__cell {
+    border-bottom: 1px solid var(--el-border-color-lighter) !important;
+  }
+
+  .el-table__body tr:last-child td.el-table__cell {
+    border-bottom: 0 !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .erp-surface,
+  .erp-kpi {
+    transition: none;
+    transform: none !important;
+  }
+}

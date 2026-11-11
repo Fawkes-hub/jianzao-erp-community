@@ -1,0 +1,177 @@
+name: ${COMPOSE_PROJECT_NAME:-erp}
+
+# 统一日志轮转：小内存/小磁盘机器上 json-file 默认无上限，长期运行会吃满磁盘
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: ${COMPOSE_PROJECT_NAME:-erp}-mysql
+    restart: unless-stopped
+    # 2C4G 单机：给 MySQL 一个硬上限，避免拖垮整机时内核先杀掉 mysqld
+    mem_limit: 700m
+    mem_reservation: 400m
+    cpus: "1.5"
+    logging: *default-logging
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-erp}
+      MYSQL_USER: ${MYSQL_USER:-erp}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?set MYSQL_PASSWORD in .env}
+      TZ: ${TZ:-Asia/Shanghai}
+    ports:
+      - "127.0.0.1:${MYSQL_PORT:-13306}:3306"
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --default-time-zone=+08:00
+      # 低内存：关闭 performance_schema（随运行时间增长占用数百 MB）、X Plugin 和 binlog
+      - --performance-schema=OFF
+      - --mysqlx=OFF
+      - --skip-log-bin
+      # 实测 MySQL 稳态约 166M；96M 缓冲池足够 2~3 人使用，报表会略多磁盘 IO
+      - --innodb-buffer-pool-size=96M
+      - --max-connections=30
+      - --table-open-cache=256
+      - --innodb-log-buffer-size=8M
+      # 低内存：MySQL 8.0 的 temptable_max_ram 默认 1G、redo 默认 100M。
+      # 一次对账/成本报表的 GROUP BY 就能瞬间申请 1G 内存，在 4G 机器上直接 OOM。
+      # 64M + mmap=0 表示临时表超过 64M 后直接走磁盘 InnoDB 临时表空间，不再向系统要内存。
+      - --temptable-max-ram=64M
+      - --temptable-max-mmap=0
+      - --innodb-redo-log-capacity=64M
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    networks:
+      - erp-net
+
+  redis:
+    image: redis:7.2
+    container_name: ${COMPOSE_PROJECT_NAME:-erp}-redis
+    restart: unless-stopped
+    # 2C4G 单机：Redis 只做缓存/会话/限流，128M 上限已足够
+    mem_limit: 128m
+    cpus: "0.5"
+    logging: *default-logging
+    # 关闭 AOF 与 RDB：Redis 在此项目只存缓存/限流/Sa-Token 会话，不需要持久化。
+    # 开启 AOF 会在 rewrite 时 fork 子进程，内存瞬时翻倍，4G 机器上风险大于收益。
+    # 代价：重启后所有用户需要重新登录（会话丢失）。
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?set REDIS_PASSWORD in .env}", "--save", "", "--appendonly", "no", "--maxmemory", "64mb", "--maxmemory-policy", "allkeys-lru"]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?set REDIS_PASSWORD in .env}
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    networks:
+      - erp-net
+
+  erp-app:
+    image: ${ERP_IMAGE:-erp:1.0.0}
+    build:
+      context: .
+      dockerfile: Dockerfile.app
+      args:
+        # 默认使用阿里云 Ubuntu 镜像（生产 VPS 无法直连官方 archive）；可在 .env 覆盖
+        APT_MIRROR: ${APT_MIRROR:-mirrors.aliyun.com}
+    container_name: ${COMPOSE_PROJECT_NAME:-erp}-app
+    restart: unless-stopped
+    # 2C4G 单机：实测稳态约 506M、启动峰值约 700M；1g 是防失控上限，不是预占
+    mem_limit: 1g
+    mem_reservation: 500m
+    cpus: "2.0"
+    logging: *default-logging
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      # 备份 manifest 记录的应用版本（与镜像 tag 一致）
+      ERP_VERSION: ${ERP_IMAGE:-unknown}
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-erp}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_USERNAME: ${MYSQL_USER:-erp}
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_PASSWORD: ${MYSQL_PASSWORD:?set MYSQL_PASSWORD in .env}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:?set REDIS_PASSWORD in .env}
+      SPRING_SERVLET_MULTIPART_LOCATION: /app/data/temp
+      SPRING_BOOT_ADMIN_CLIENT_ENABLED: "false"
+      API_DECRYPT_ENABLED: "false"
+      CAPTCHA_ENABLE: ${CAPTCHA_ENABLE:-true}
+      # 浏览器对 POST/PUT/DELETE 即使同源也会带 Origin：白名单必须包含实际访问地址，
+      # 否则会被 CORS 过滤器判为非法跨域并返回 403 Invalid CORS request。
+      # 留空时后端只放行 localhost/127.0.0.1；公网 IP/域名部署必须在 .env 配置。
+      SECURITY_CORS_ALLOWED_ORIGINS: ${SECURITY_CORS_ALLOWED_ORIGINS:-}
+      SA_TOKEN_JWT_SECRET_KEY: ${JWT_SECRET:?set JWT_SECRET in .env}
+      SPRING_BOOT_ADMIN_CLIENT_USERNAME: ${MONITOR_USERNAME:-ruoyi}
+      SPRING_BOOT_ADMIN_CLIENT_PASSWORD: ${MONITOR_PASSWORD:-123456}
+      TZ: ${TZ:-Asia/Shanghai}
+      # 注意：不要在 .env 里重复定义 JAVA_TOOL_OPTIONS，否则会覆盖这里导致参数漂移
+      # 实测：堆存活 93M / 提交 162M，元空间 112M；上限按实际用量留足余量即可
+      # ExitOnOutOfMemoryError：真发生 OOM 时进程主动退出，交给 restart 策略重启，避免半死状态占着端口
+      JAVA_TOOL_OPTIONS: "${JAVA_TOOL_OPTIONS:--Xms128m -Xmx512m -XX:+UseSerialGC -XX:MaxMetaspaceSize=192m -XX:CompressedClassSpaceSize=48m -XX:ReservedCodeCacheSize=64m -XX:MaxDirectMemorySize=96m -Xss512k -XX:ActiveProcessorCount=2 -XX:+ExitOnOutOfMemoryError}"
+      # 2~3 人使用：收缩 Web/线程池/连接池，关闭接口文档与多余监控端点
+      SERVER_UNDERTOW_THREADS_IO: "2"
+      SERVER_UNDERTOW_THREADS_WORKER: "16"
+      SPRINGDOC_API_DOCS_ENABLED: "false"
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health"
+      MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS: "never"
+      REDISSON_THREADS: "2"
+      REDISSON_NETTYTHREADS: "4"
+      REDISSON_SINGLESERVERCONFIG_CONNECTIONMINIMUMIDLESIZE: "2"
+      REDISSON_SINGLESERVERCONFIG_CONNECTIONPOOLSIZE: "8"
+      REDISSON_SINGLESERVERCONFIG_SUBSCRIPTIONCONNECTIONPOOLSIZE: "4"
+      SPRING_DATASOURCE_DYNAMIC_HIKARI_MAXPOOLSIZE: "5"
+      SPRING_DATASOURCE_DYNAMIC_HIKARI_MINIDLE: "1"
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -u \"$$SPRING_BOOT_ADMIN_CLIENT_USERNAME:$$SPRING_BOOT_ADMIN_CLIENT_PASSWORD\" http://127.0.0.1:8080/actuator/health | grep -q UP"]
+      interval: 15s
+      timeout: 5s
+      retries: 30
+    networks:
+      - erp-net
+
+  nginx:
+    image: nginx:stable
+    container_name: ${COMPOSE_PROJECT_NAME:-erp}-nginx
+    restart: unless-stopped
+    mem_limit: 64m
+    cpus: "0.5"
+    logging: *default-logging
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+      - ./frontend-dist:/usr/share/nginx/html:ro
+    depends_on:
+      erp-app:
+        condition: service_healthy
+    networks:
+      - erp-net
+
+volumes:
+  mysql-data:
+  redis-data:
+
+networks:
+  erp-net:
+    driver: bridge

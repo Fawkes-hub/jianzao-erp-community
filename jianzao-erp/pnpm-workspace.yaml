@@ -1,0 +1,8 @@
+# pnpm 9 要求 workspace 文件必须声明 packages，缺省会直接报 "packages field missing or empty"
+# jianzao-erp 是单包工程（lockfile 只有 "." 一个 importer），这里声明自身即为 workspace 根
+packages:
+  - '.'
+
+allowBuilds:
+  '@parcel/watcher': true
+  esbuild: true

@@ -1,0 +1,406 @@
+.el-collapse {
+  .collapse__title {
+    font-weight: 600;
+    padding: 0 8px;
+    font-size: 1.2em;
+    line-height: 1.1em;
+  }
+  .el-collapse-item__content {
+    padding: 0 8px;
+  }
+}
+
+.el-divider--horizontal {
+  margin-bottom: 10px;
+  margin-top: 10px;
+}
+
+.el-breadcrumb__inner,
+.el-breadcrumb__inner a {
+  font-weight: 400 !important;
+}
+
+.el-upload {
+  input[type='file'] {
+    display: none !important;
+  }
+}
+
+.el-upload__input {
+  display: none;
+}
+
+.cell {
+  .el-tag {
+    margin-right: 0px;
+  }
+}
+
+.small-padding {
+  .cell {
+    padding-left: 5px;
+    padding-right: 5px;
+  }
+}
+
+.fixed-width {
+  .el-button--mini {
+    padding: 7px 10px;
+    width: 60px;
+  }
+}
+
+.status-col {
+  .cell {
+    padding: 0 10px;
+    text-align: center;
+
+    .el-tag {
+      margin-right: 0px;
+    }
+  }
+}
+
+/*-------------Dialog-------------**/
+.el-overlay {
+  overflow: hidden;
+
+  .el-overlay-dialog {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+
+    .el-dialog {
+      margin: 0 auto !important;
+      border-radius: var(--app-radius-base);
+      box-shadow: var(--app-shadow-md);
+      overflow: hidden;
+
+      .el-dialog__body {
+        padding: 15px !important;
+      }
+      .el-dialog__header {
+        padding: 16px 16px 8px 16px;
+        box-sizing: border-box;
+        border-bottom: 1px solid var(--brder-color);
+        margin-right: 0;
+      }
+    }
+  }
+}
+
+.el-dialog__body {
+  max-height: calc(90vh - 111px) !important;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+// refine element ui upload
+.upload-container {
+  .el-upload {
+    width: 100%;
+
+    .el-upload-dragger {
+      width: 100%;
+      height: 200px;
+    }
+  }
+}
+
+// dropdown
+.el-dropdown-menu {
+  border-radius: var(--app-radius-md);
+  box-shadow: var(--app-shadow-sm);
+  a {
+    display: block;
+  }
+}
+
+// fix date-picker ui bug in filter-item
+.el-range-editor.el-input__inner {
+  display: inline-flex !important;
+}
+
+// to fix el-date-picker css style
+.el-range-separator {
+  box-sizing: content-box;
+}
+
+.el-menu--collapse > div > .el-submenu > .el-submenu__title .el-submenu__icon-arrow {
+  display: none;
+}
+
+.el-dropdown .el-dropdown-link {
+  color: var(--el-color-primary) !important;
+}
+
+/* 当 el-form 的 inline 属性为 true 时 */
+/* 设置 label 的宽度默认为 68px */
+.el-form--inline .el-form-item__label {
+  width: 68px;
+}
+
+/* 设置 el-select 的宽度默认为 240px */
+.el-form--inline .el-select {
+  width: 240px;
+}
+
+/* 设置 el-input 的宽度默认为 240px */
+.el-form--inline .el-input {
+  width: 240px;
+}
+
+/* 设置 el-message-box 消息弹框内容强制换行 */
+.el-message-box .el-message-box__message {
+  word-break: break-word;
+}
+
+.el-message-box {
+  box-shadow: var(--app-shadow-md);
+}
+
+.el-message,
+.el-notification,
+.el-alert {
+  border-radius: var(--app-radius-md);
+  box-shadow: var(--app-shadow-sm);
+}
+
+// Modern rounded inputs
+.el-input__wrapper,
+.el-textarea__inner,
+.el-select__wrapper,
+.el-date-editor,
+.el-range-editor,
+.el-input-number,
+.el-input-number__decrease,
+.el-input-number__increase {
+  border-radius: var(--app-radius-md);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+// 焦点环：EP 2.13.5 会在 .el-input__wrapper.is-focus 上重写 box-shadow，
+// 必须带 html 前缀提高特异性才能落地自定义的 2px 外晕 + 内沿实边（WCAG 2.4.7 Visible Focus）
+html .el-input__wrapper.is-focus,
+html .el-textarea__inner:focus,
+html .el-select__wrapper.is-focus,
+html .el-date-editor.is-focus .el-input__wrapper,
+html .el-range-editor.is-focus {
+  box-shadow: var(--app-focus-ring);
+}
+
+// Buttons
+.el-button {
+  border-radius: var(--el-border-radius-base);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.el-button:not(.is-text):not(.is-link):hover {
+  transform: translateY(-1px);
+  box-shadow: var(--app-shadow-sm);
+}
+
+// Cards, popovers, drawers
+.el-popover,
+.el-tooltip__popper,
+.el-popper {
+  box-shadow: var(--app-shadow-sm);
+}
+
+.el-drawer {
+  border-radius: var(--app-radius-base);
+  box-shadow: var(--app-shadow-md);
+}
+
+.el-drawer__header {
+  margin-bottom: 0;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--el-border-color-light);
+}
+
+// Table polish
+.el-table {
+  border-radius: var(--app-radius-base);
+  overflow: hidden;
+  box-shadow: var(--app-shadow-sm);
+  border: 1px solid var(--el-border-color-lighter);
+}
+
+.el-table__header-wrapper,
+.el-table__body-wrapper {
+  background: var(--el-bg-color);
+}
+
+.el-table__row:hover td.el-table__cell {
+  background-color: var(--el-fill-color-light) !important;
+}
+
+// Tabs
+.el-tabs__header {
+  margin: 0 0 12px 0;
+}
+
+.el-tabs__item {
+  border-radius: var(--app-radius-md);
+  margin: 0 2px;
+}
+
+.el-tabs__nav-wrap::after {
+  background-color: var(--el-border-color-lighter);
+}
+
+// Pagination
+.el-pagination .btn-prev,
+.el-pagination .btn-next,
+.el-pagination .el-pager li {
+  border-radius: var(--app-radius-sm);
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.el-pagination .el-pager li.is-active {
+  box-shadow: var(--app-shadow-sm);
+}
+
+// Breadcrumb
+.el-breadcrumb {
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+// 查询区控件宽度三档（DOC/32 §5）：给 el-form--inline 的 240px 默认值让路。
+// 必须带 .erp-search-form 前缀提高特异性：EP 组件根节点会继承 class，
+// 裸 .query-w-* 与 .el-form--inline .el-input 同权重时会被后者抢赢（实测三档全变 240px）。
+.erp-search-form .query-w-sm {
+  width: 140px;
+}
+
+.erp-search-form .query-w-md {
+  width: 200px;
+}
+
+.erp-search-form .query-w-lg {
+  width: 240px;
+  // daterange 默认 350px 由 EP 组件级变量控制，class 直接设 width 抢不过；必须重映射变量本身
+  --el-date-editor-daterange-width: 240px;
+}
+
+// ERP 列表页搜索区统一布局：条件项平铺换行，查询/重置固定右下角
+// 覆盖 .el-form--inline 写死的 68px label 宽，根治「只看未完成」等长中文 label 折行错行
+.erp-search-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.erp-search-form .el-form-item__label {
+  width: auto !important;
+  white-space: nowrap;
+  padding-right: 8px;
+}
+
+// TDesign 版查询区（DOC/35 T1 采购订单 PoC）：t-form 默认不是 flex，需显式排布；
+// t-form-item 的 label 用 .t-form__label，长中文 label 禁止折行
+.erp-search-form.t-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.erp-search-form .t-form__label {
+  width: auto !important;
+  white-space: nowrap;
+  padding-right: 8px;
+}
+
+.erp-search-form .t-form__controls {
+  min-width: 0;
+}
+
+// 查询按钮项靠右并贴底，始终落在搜索区最后一行右下角
+.erp-search-form__actions {
+  margin-left: auto;
+  align-self: flex-end;
+}
+
+// EP 组件级圆角变量重映射（DOC/32 §2#12）
+// Element Plus 把这几个组件的圆角以字面量定义在组件自身选择器上（如 .el-card{--el-card-border-radius:4px}），
+// 组件局部变量优先于 :root；且 element-plus/dist/index.css 在本仓 scss 之后引入，
+// 同特异性的 `.el-xxx{border-radius:…}` 覆盖会被 EP 吃掉（实测卡片一直是 4px）。
+// 因此必须用 html 前缀提高特异性重映射变量本身，而不是重设 border-radius。
+html .el-card {
+  --el-card-border-radius: var(--app-radius-lg);
+  --el-card-border-color: var(--el-border-color-lighter);
+}
+
+html .el-tag {
+  --el-tag-border-radius: var(--app-radius-sm);
+}
+
+html .el-message-box {
+  --el-messagebox-border-radius: var(--app-radius-md);
+}
+
+html .el-popover {
+  --el-popover-border-radius: var(--app-radius-md);
+}
+
+// 打印预览 iframe：边框与底色走主题变量，避免亮/暗切换时预览框突兀（DOC/32 §9 打印链路）
+.erp-print-frame {
+  border: 1px solid var(--el-border-color);
+  border-radius: var(--app-radius-sm);
+  background: var(--el-fill-color-blank);
+}
+
+// 金额/数量列统一口径：右对齐 + 等宽数字，防数值变化时列宽抖动（DOC/32 §5 L3）
+// 用法：<el-table-column class-name="num-cell" label-class-name="num-cell" align="right" />
+.num-cell {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+.el-table .num-cell {
+  text-align: right;
+}
+
+// TDesign 全局基础映射（DOC/35 T1）：后续每页换 t-* 时自动继承与 .erp-* 一致的圆角/阴影/表面层级。
+// 现有 49 条 .el-* 规则继续服务未迁移页，两者并存至 T6 清理。
+// 组件级 --td-* 变量优先级高，统一用 html:root 或更高特异性（DOC/35 §9.2 教训）。
+html .t-card {
+  border-radius: var(--app-radius-surface);
+  box-shadow: var(--app-shadow-elevated);
+}
+
+html .t-dialog,
+html .t-drawer {
+  border-radius: var(--app-radius-surface);
+}
+
+html .t-button {
+  border-radius: var(--app-radius-md);
+}
+
+// TDesign 表格：与 .erp-table 同一套「无外框 + 表头细分隔线」语言
+html .erp-table.t-table {
+  border: 0;
+  background: transparent;
+}
+
+html .erp-table.t-table th {
+  background: transparent;
+  border-bottom: 1px solid var(--td-border-level-1-color);
+  font-weight: 600;
+}
+
+html .erp-table.t-table td {
+  border-bottom: 1px solid var(--td-border-level-1-color);
+}
+
+html .t-table .num-cell {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}

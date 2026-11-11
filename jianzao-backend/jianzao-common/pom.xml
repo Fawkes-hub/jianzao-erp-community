@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>jianzao-backend</artifactId>
+        <groupId>org.dromara</groupId>
+        <version>${revision}</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <modules>
+        <module>jianzao-common-bom</module>
+        <module>jianzao-common-social</module>
+        <module>jianzao-common-core</module>
+        <module>jianzao-common-doc</module>
+        <module>jianzao-common-excel</module>
+        <module>jianzao-common-idempotent</module>
+        <module>jianzao-common-job</module>
+        <module>jianzao-common-log</module>
+        <module>jianzao-common-mail</module>
+        <module>jianzao-common-mybatis</module>
+        <module>jianzao-common-oss</module>
+        <module>jianzao-common-ratelimiter</module>
+        <module>jianzao-common-redis</module>
+        <module>jianzao-common-satoken</module>
+        <module>jianzao-common-security</module>
+        <module>jianzao-common-sms</module>
+        <module>jianzao-common-web</module>
+        <module>jianzao-common-translation</module>
+        <module>jianzao-common-sensitive</module>
+        <module>jianzao-common-json</module>
+        <module>jianzao-common-encrypt</module>
+        <module>jianzao-common-tenant</module>
+        <module>jianzao-common-websocket</module>
+        <module>jianzao-common-sse</module>
+    </modules>
+
+    <artifactId>jianzao-common</artifactId>
+    <packaging>pom</packaging>
+
+    <description>
+        common 通用模块
+    </description>
+
+</project>
