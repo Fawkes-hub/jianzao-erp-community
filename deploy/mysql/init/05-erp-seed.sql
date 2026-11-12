@@ -164,6 +164,11 @@ INSERT IGNORE INTO sys_menu VALUES
 ('3126', '其他收支作废', '3120', '6', '', NULL, '', 1, 0, 'F', '0', '0', 'erp:finance:other-flow:void', '#', 103, 1, NOW(), NULL, NULL, ''),
 ('3170', '其他收支查看', '3120', '7', '', NULL, '', 1, 0, 'F', '0', '0', 'erp:finance:other-flow:query', '#', 103, 1, NOW(), NULL, NULL, '');
 
+-- 财务管理：综合成本
+INSERT IGNORE INTO sys_menu VALUES
+('3130', '综合成本', '3230', '6', 'finance/cost-report', 'erp/finance/cost-report/index', '', 1, 0, 'C', '0', '0', 'erp:finance:cost-report', 'chart', 103, 1, NOW(), NULL, NULL, '综合成本/利润'),
+('3131', '综合成本导出', '3130', '1', '', NULL, '', 1, 0, 'F', '0', '0', 'erp:finance:cost-report:export', '#', 103, 1, NOW(), NULL, NULL, '');
+
 -- 财务管理：收款单（针对客户）
 INSERT IGNORE INTO sys_menu VALUES
 ('3140', '收款单', '3230', '3', 'finance/receipt', 'erp/finance/receipt/index', '', 1, 0, 'C', '0', '0', 'erp:finance:receipt:list', 'money', 103, 1, NOW(), NULL, NULL, '客户收款单'),

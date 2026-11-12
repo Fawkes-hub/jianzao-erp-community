@@ -121,3 +121,4 @@ UPDATE sys_menu SET icon = 'file-pdf'       WHERE icon = 'pdf';
 UPDATE sys_menu SET icon = 'upload'         WHERE icon = 'export';
 UPDATE sys_menu SET icon = 'file-pdf'       WHERE icon = 'print';
 UPDATE sys_menu SET icon = 'catalog'        WHERE icon = 'goods';
+UPDATE sys_menu SET icon = 'chart-column' WHERE menu_id = 3130;  -- 综合成本

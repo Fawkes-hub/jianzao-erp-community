@@ -4,6 +4,7 @@ import type {
   FinArApQuery,
   FinArApSummaryVO,
   FinArApVO,
+  FinCostReportVO,
   FinOpeningForm,
   FinOpeningVO,
   FinOtherFlowForm,
@@ -179,4 +180,6 @@ export function delOtherFlow(id: string | number): AxiosPromise<void> {
 
 /* ------------------------------ 综合成本 ------------------------------ */
 
-
+export function costReport(month?: string): AxiosPromise<FinCostReportVO> {
+  return request({ url: '/erp/finance/cost-report', method: 'get', params: { month } });
+}
