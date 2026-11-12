@@ -8,8 +8,8 @@
 | 项 | 状态 |
 |---|---|
 | 目录 | `/Users/fawkes/Documents/ERP/jianzao-erp-community/`（与主仓 `erp/` 平级，独立） |
-| 源码 | ✅ 已导入并裁剪（1548 个跟踪文件，约 20 MB） |
-| Git 仓库 | ✅ 已初始化，10 个策展提交，单一公开身份，`git fsck` 干净 |
+| 源码 | ✅ 已导入并裁剪（文件数见 `git ls-files \| wc -l`） |
+| Git 仓库 | ✅ 已初始化（提交数见 `git rev-list --count HEAD`），单一公开身份，`git fsck` 干净 |
 | 公开仓库 | ❌ 未创建 |
 | 推送 | ❌ 无（**按约定不自行建远端、不推送**） |
 | 后端编译 | ✅ `mvn -o -f jianzao-backend/pom.xml -pl jianzao-admin -am compile -DskipTests` → BUILD SUCCESS（26 模块） |

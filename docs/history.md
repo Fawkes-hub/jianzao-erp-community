@@ -45,7 +45,7 @@
 | 清理 | `001b82b` | 清理残留（示例密钥、付费打印场景、死代码与配置） |
 | 清理 | `9e5251e` | 替换上游 demo 密钥示例为占位值 |
 
-共 **14 个提交 / 1548 个跟踪文件**。全部作者为 `Jianzao Community <community@example.invalid>`；`git fsck --unreachable` 干净、无 tag、无原仓库对象。
+提交总数与跟踪文件数**以 `git rev-list --count HEAD` / `git ls-files | wc -l` 为准**（本文档表格只列里程碑，后续清理/文档提交不逐条追加）。全部作者为 `Jianzao Community <community@example.invalid>`；`git fsck --unreachable` 干净、无 tag、无原仓库对象。
 
 ## 后续演进
 
