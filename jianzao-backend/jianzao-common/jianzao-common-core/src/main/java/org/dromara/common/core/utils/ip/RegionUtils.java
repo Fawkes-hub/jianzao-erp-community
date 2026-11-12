@@ -13,8 +13,8 @@ import java.time.Duration;
 
 /**
  * IP地址行政区域工具类
- * 参考地址：<a href="https://gitee.com/lionsoul/ip2region/tree/master/binding/java">ip2region xdb java 查询客户端实现</a>
- * xdb数据库文件下载：<a href="https://gitee.com/lionsoul/ip2region/tree/master/data">ip2region data</a>
+ * 参考地址：<a href="https://github.com/lionsoul2014/ip2region/tree/master/binding/java">ip2region xdb java 查询客户端实现</a>
+ * xdb数据库文件下载：<a href="https://github.com/lionsoul2014/ip2region/tree/master/data">ip2region data</a>
  *
  * @author 秋辞未寒
  */
@@ -22,16 +22,16 @@ import java.time.Duration;
 public class RegionUtils {
 
     // 默认IPv4地址库文件路径
-    // 下载地址：https://gitee.com/lionsoul/ip2region/blob/master/data/ip2region_v4.xdb
+    // 下载地址：https://github.com/lionsoul2014/ip2region/blob/master/data/ip2region_v4.xdb
     public static final String DEFAULT_IPV4_XDB_PATH = "ip2region_v4.xdb";
 
     // 默认IPv6地址库文件路径
-    // 下载地址：https://gitee.com/lionsoul/ip2region/blob/master/data/ip2region_v6.xdb
+    // 下载地址：https://github.com/lionsoul2014/ip2region/blob/master/data/ip2region_v6.xdb
     public static final String DEFAULT_IPV6_XDB_PATH = "ip2region_v6.xdb";
 
     // 默认缓存切片大小为15MB（仅针对BufferCache全量读取有效，如果你的xdb数据库很大，合理设置该值可以有效提升BufferCache模式下的查询效率，具体可以查看Ip2Region的README）
     // 注意：设置过大的值可能会申请内存时，因内存不足而导致OOM，请合理设置该值。
-    // README：https://gitee.com/lionsoul/ip2region/tree/master/binding/java
+    // README：https://github.com/lionsoul2014/ip2region/tree/master/binding/java
     public static final int DEFAULT_CACHE_SLICE_BYTES = 1024 * 1024 * 15;
 
     // 未知地址

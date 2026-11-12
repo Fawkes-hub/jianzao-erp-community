@@ -1,5 +1,5 @@
 -- ----------------------------
--- 0、warm-flow-all.sql，地址：https://gitee.com/dromara/warm-flow/blob/master/sql/sqlserver/sqlserver.sql
+-- 0、warm-flow-all.sql，地址：https://github.com/dromara/warm-flow/blob/master/sql/sqlserver/sqlserver.sql
 -- ----------------------------
 CREATE TABLE flow_definition (
     id bigint NOT NULL,

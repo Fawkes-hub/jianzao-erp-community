@@ -4,7 +4,7 @@
 
 ## 1. jianzao-backend（原 RuoYi-Vue-Plus 后端底座）
 
-- 上游：https://gitee.com/dromara/RuoYi-Vue-Plus
+- 上游：https://github.com/dromara/RuoYi-Vue-Plus
 - 分支：`5.X`
 - 拉取提交：`815087e733eddd641dce8ee3bdb72f21e1b08e28`
 - 目录名与模块：已从 `RuoYi-Vue-Plus` 全量重命名为 `jianzao-backend`；底层模块（`jianzao-common-*`、`jianzao-modules`、`jianzao-extend`、`jianzao-admin`）及业务模块（`jianzao-erp-*`）已彻底收敛为简造架构体系。
@@ -20,7 +20,8 @@
 
 ## 2. jianzao-erp（前端工程）
 
-- 原上游：https://gitee.com/JavaLionLi/plus-ui（已彻底剥离解耦，独立维护）
+- 原上游：https://github.com/CrazyLionCat/plus-ui（基于 5.X，已彻底剥离解耦，独立维护）
+  - 注：该仓库当前默认分支为 `6.X-Vue`；本项目锁定的是 **5.X** 时期的快照，不再跟随上游分支
 - 本项目仓库：https://github.com/ORG_PLACEHOLDER/jianzao-erp-community.git （子目录 `jianzao-erp`）
 - 许可证：MIT（见 `jianzao-erp/LICENSE`）
 - 本地定制：

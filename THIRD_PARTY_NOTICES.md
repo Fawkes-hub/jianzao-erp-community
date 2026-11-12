@@ -8,7 +8,7 @@
 
 ## 1. RuoYi-Vue-Plus（后端底座）
 
-- 来源：<https://gitee.com/dromara/RuoYi-Vue-Plus>，5.X，commit `815087e733eddd641dce8ee3bdb72f21e1b08e28`
+- 来源：<https://github.com/dromara/RuoYi-Vue-Plus>，5.X，commit `815087e733eddd641dce8ee3bdb72f21e1b08e28`
 - 用于：`jianzao-backend/`（含 `jianzao-common-*`、`jianzao-system`、`jianzao-admin` 等；已裁剪、重命名与本地化改造）
 - 许可证：MIT
 - 原始声明文件：`jianzao-backend/LICENSE`（**发布时必须原样保留，不得删改**）
@@ -39,7 +39,7 @@ SOFTWARE.
 
 ### 1.1 plus-ui（前端脚手架，历史来源）
 
-- 来源：<https://gitee.com/JavaLionLi/plus-ui>
+- 来源：<https://github.com/CrazyLionCat/plus-ui>
 - 用于：`jianzao-erp/` 的初始脚手架；已彻底解耦、全量迁移至 TDesign，独立维护，不再同步上游
 - 许可证：MIT
 - 原始声明文件：`jianzao-erp/LICENSE`（**发布时必须原样保留，不得删改**）
