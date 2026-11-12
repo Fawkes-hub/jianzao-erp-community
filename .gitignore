@@ -18,6 +18,9 @@ build/
 # 编辑器 / 系统
 .idea/
 .vscode/
+.zcode/
+.openidea/
+.workbuddy/
 *.iml
 .DS_Store
 Thumbs.db

@@ -195,7 +195,6 @@ const sceneOptions: { label: string; value: ErpPrintScene }[] = [
   { label: '送货单', value: 'SALE_DELIVERY' },
   { label: '对账单', value: 'STATEMENT' },
   { label: '采购入库单', value: 'PURCHASE_IN' },
-  { label: '生产单', value: 'PRODUCTION' },
   { label: '收款单', value: 'RECEIPT' },
   { label: '付款单', value: 'PAYMENT' }
 ];

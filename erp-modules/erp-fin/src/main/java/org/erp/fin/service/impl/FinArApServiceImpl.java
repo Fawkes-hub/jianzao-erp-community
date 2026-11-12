@@ -392,8 +392,4 @@ public class FinArApServiceImpl implements IFinArApService {
      * @param amount 应付加工费合计
      * @param bizDate 业务日期
      */
-    @Override
-    public void createBySubcontract(Long subcontractId, String subcontractNo, Long supplierId, BigDecimal amount, Date bizDate) {
-        create(PARTY_AP, supplierId, "SUBCONTRACT", subcontractId, amount, bizDate);
-    }
 }

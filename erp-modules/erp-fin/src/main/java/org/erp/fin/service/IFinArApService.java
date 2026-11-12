@@ -85,14 +85,5 @@ public interface IFinArApService {
      */
     void unsettle(Long arApId, BigDecimal amount);
 
-    /**
-     * 委外加工单完工生成应付账款（partyType=AP, sourceType=SUBCONTRACT）。
-     *
-     * @param subcontractId 委外单ID
-     * @param subcontractNo 委外单号
-     * @param supplierId 加工商ID
-     * @param amount 应付加工费合计
-     * @param bizDate 业务日期
-     */
-    void createBySubcontract(Long subcontractId, String subcontractNo, Long supplierId, BigDecimal amount, Date bizDate);
+    
 }

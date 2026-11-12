@@ -1125,7 +1125,7 @@ export type ErpPartnerType = 'CUSTOMER' | 'SUPPLIER';
 /* ------------------------------ 打印模板 ------------------------------ */
 
 /** 打印场景 */
-export type ErpPrintScene = 'SALE_DELIVERY' | 'STATEMENT' | 'PURCHASE_IN' | 'PRODUCTION' | 'RECEIPT' | 'PAYMENT';
+export type ErpPrintScene = 'SALE_DELIVERY' | 'STATEMENT' | 'PURCHASE_IN' | 'RECEIPT' | 'PAYMENT';
 
 /** 打印模板 */
 
@@ -1267,8 +1267,6 @@ export interface ErpPriceHistoryVO {
   amount: ErpAmount;
 }
 
-/* ------------------------------ 盘点单（DOC/23） ------------------------------ */
-
 /* ------------------------------ 退货单（DOC/24） ------------------------------ */
 
 export interface SaleReturnItemVO {
@@ -1384,6 +1382,4 @@ export interface PurchaseReturnQuery extends PageQuery {
   supplierId?: ErpId;
   status?: string;
 }
-
-/* ------------------------------ 委外加工 ------------------------------ */
 

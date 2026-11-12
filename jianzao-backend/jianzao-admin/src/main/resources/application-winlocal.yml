@@ -162,15 +162,4 @@ management:
     health:
       show-details: never
 
---- # ERP 版本与自动全量备份（本地单机）
 # erp.home 由启动器以 -Derp.home=<安装目录> 注入
-# 备份落在 data/backup，升级保留 data/ 时备份不会丢
-erp:
-  version: ${ERP_VERSION:unknown}
-  backup:
-    enabled: ${ERP_BACKUP_ENABLED:true}
-    dir: "${erp.home:.}/data/backup"
-    cron: "${ERP_BACKUP_CRON:0 0 2 * * ?}"
-    retention-days: ${ERP_BACKUP_RETENTION_DAYS:30}
-    mysqldump: "${erp.home:.}/mysql/bin/mysqldump.exe"
-    timeout-seconds: ${ERP_BACKUP_TIMEOUT_SECONDS:300}

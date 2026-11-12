@@ -8,7 +8,6 @@ MySQL 容器**只在数据卷为空时**执行本目录下的 `*.sql`。
 2. `04-erp-schema.sql`：ERP 业务表、索引。
 3. `05-erp-seed.sql`：ERP 菜单、按钮权限、字典、默认仓库。
 4. `06-menu-icons-tdesign.sql`：TDesign 菜单图标。
-5. `07-account-layer.sql`：多企业账户层（`sys_account`、`sys_user.account_id`、套餐 `employee_menu_ids`）、默认套餐 100 种子与内置管理员账户回填。
 
 > 已裁剪 `ry_job.sql`（任务调度）与 `ry_workflow.sql`（工作流）：对应依赖已从 `ruoyi-admin/pom.xml` 移除，v1 不使用。
 
