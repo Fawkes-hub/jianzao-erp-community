@@ -97,7 +97,7 @@
             </properties>
         </profile>
         <profile>
-            <!-- Windows 本地单机包（deploy/local-win/），由 CI 构建时使用 -->
+            <!-- 本地单机模式（内嵌 MySQL/Redis，固定端口） -->
             <id>winlocal</id>
             <properties>
                 <profiles.active>winlocal</profiles.active>

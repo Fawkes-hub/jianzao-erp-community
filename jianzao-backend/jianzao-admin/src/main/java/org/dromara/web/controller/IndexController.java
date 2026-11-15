@@ -26,7 +26,7 @@ import java.nio.file.Paths;
 public class IndexController {
 
     /**
-     * 本地单机包（deploy/local-win）由后端直接托管前端页面时，转发到 app/dist/index.html；
+     * 本地单机模式由后端直接托管前端页面时，转发到 app/dist/index.html；
      * 服务器部署无该目录，保持原有提示语行为。
      */
     private static final Path LOCAL_SPA_INDEX = Paths.get("app", "dist", "index.html");

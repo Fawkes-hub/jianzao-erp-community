@@ -1,5 +1,5 @@
---- # 本地 Windows 单机包配置（spring.profiles.active=winlocal）
-# 由 deploy/local-win/ 构建产物的 ERP.exe 编排启动，MySQL/Redis 均只绑定 127.0.0.1
+--- # 本地单机模式配置（spring.profiles.active=winlocal）
+# MySQL/Redis 均只绑定 127.0.0.1，适合与桌面启动器或内嵌服务配合使用
 server:
   # 对外唯一端口（frpc 只需映射此端口）
   port: 16866
