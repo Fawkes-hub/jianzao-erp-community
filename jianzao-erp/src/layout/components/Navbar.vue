@@ -65,24 +65,17 @@
         </t-tooltip>
       </template>
       <div class="avatar-container">
-        <t-dropdown class="right-menu-item hover-effect" trigger="click" @click="handleCommand">
+        <t-dropdown
+          :options="avatarDropdownOptions"
+          :min-column-width="120"
+          trigger="click"
+          class="right-menu-item hover-effect"
+          @click="handleCommand"
+        >
           <div class="avatar-wrapper">
             <img :src="userStore.avatar" class="user-avatar" />
             <CaretDownIcon />
           </div>
-          <template #dropdown>
-            <t-dropdown-menu>
-              <router-link v-if="!dynamic" to="/user/profile">
-                <t-dropdown-item :value="'profile'">{{ proxy.$t('navbar.personalCenter') }}</t-dropdown-item>
-              </router-link>
-              <t-dropdown-item v-if="settingsStore.showSettings" :value="'setLayout'">
-                <span>{{ proxy.$t('navbar.layoutSetting') }}</span>
-              </t-dropdown-item>
-              <t-dropdown-item divider :value="'logout'">
-                <span>{{ proxy.$t('navbar.logout') }}</span>
-              </t-dropdown-item>
-            </t-dropdown-menu>
-          </template>
         </t-dropdown>
       </div>
     </div>
@@ -194,8 +187,24 @@ const emits = defineEmits(['setLayout']);
 const setLayout = () => {
   emits('setLayout');
 };
+const toProfile = () => {
+  router.push('/user/profile');
+};
+// 头像下拉：options 数据驱动，避免插槽里嵌 router-link 被 TDesign 误判为二级子菜单
+const avatarDropdownOptions = computed(() => {
+  const options: Array<{ content: string; value: string; divider?: boolean }> = [];
+  if (!dynamic.value) {
+    options.push({ content: proxy?.$t('navbar.personalCenter') || '个人中心', value: 'profile' });
+  }
+  if (settingsStore.showSettings) {
+    options.push({ content: proxy?.$t('navbar.layoutSetting') || '布局设置', value: 'setLayout' });
+  }
+  options.push({ content: proxy?.$t('navbar.logout') || '退出登录', value: 'logout', divider: true });
+  return options;
+});
 // 定义Command方法对象 通过key直接调用方法
 const commandMap: { [key: string]: any } = {
+  profile: toProfile,
   setLayout,
   logout
 };

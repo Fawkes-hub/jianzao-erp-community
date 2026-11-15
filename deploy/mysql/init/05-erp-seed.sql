@@ -305,3 +305,6 @@ INSERT IGNORE INTO sys_role_menu (role_id, menu_id) VALUES (5, 3010), (6, 3010);
 -- ------------------------------------------------------------
 DELETE FROM sys_role_menu WHERE menu_id IN (5, 1500, 1501, 1502, 1503, 1504, 1505, 1506, 1507, 1508, 1509, 1510, 1511);
 DELETE FROM sys_menu WHERE menu_id IN (5, 1500, 1501, 1502, 1503, 1504, 1505, 1506, 1507, 1508, 1509, 1510, 1511);
+
+-- 演示账号使用中性邮箱，避免个人中心显示上游作者的示例邮箱
+UPDATE sys_user SET email = 'admin@example.com' WHERE user_id = 1 AND email = 'crazyLionLi@163.com';

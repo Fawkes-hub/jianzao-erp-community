@@ -1,7 +1,7 @@
 <template>
   <t-form ref="pwdRef" :data="user" :rules="rules" label-align="right" label-width="84px" class="profile-pwd-form">
     <!-- 密码归全局账户（account），不再按企业各存一套 -->
-    <t-alert class="mb-4" theme="info" message="密码为账户级密码：修改后对您已加入的全部企业同时生效，请妥善保管。" />
+    <t-alert class="mb-4" theme="info" message="修改后立即生效，下次登录请使用新密码。请勿与其他系统复用同一密码。" />
 
     <t-form-item label="旧密码" name="oldPassword">
       <t-input v-model="user.oldPassword" placeholder="请输入旧密码" type="password" clearable style="width: 380px" />

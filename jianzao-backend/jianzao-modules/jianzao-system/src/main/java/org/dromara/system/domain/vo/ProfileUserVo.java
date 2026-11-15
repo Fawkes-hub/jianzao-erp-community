@@ -87,4 +87,9 @@ public class ProfileUserVo implements Serializable {
     @Translation(type = TransConstant.DEPT_ID_TO_NAME, mapper = "deptId")
     private String deptName;
 
+    /**
+     * 创建日期
+     */
+    private Date createTime;
+
 }

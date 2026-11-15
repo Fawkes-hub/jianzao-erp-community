@@ -73,7 +73,7 @@
           <div class="erp-panel__head">
             <div>
               <span class="erp-panel-title">账号设置</span>
-              <span class="erp-panel-sub">管理个人基本资料、密码及绑定应用</span>
+              <span class="erp-panel-sub">管理个人基本资料、密码及登录设备</span>
             </div>
           </div>
 
