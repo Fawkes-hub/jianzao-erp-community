@@ -32,7 +32,10 @@
 1. 先开 issue 讨论（bug 复现步骤 / 功能动机 / 影响范围），避免白做；
 2. fork → 建分支 → 小步提交，一个 PR 只解决一件事；
 3. 提交信息用中文或英文均可，写清「改了什么、为什么」；
-4. 自检：后端 `mvn -Pdev test`、前端 `pnpm build`、无新增 lint 错误；
+4. 自检：
+   - 后端：`mvn -f jianzao-backend/pom.xml install -DskipTests` 后 `mvn -f erp-modules/pom.xml test`
+   - 前端：`cd jianzao-erp && pnpm install --frozen-lockfile && pnpm build:prod`
+   - 以上两条也是 CI 的检查项，PR 上必须全绿；
 5. 发起 PR，完成 CLA 签署检查；
 6. 项目方评审；可能需要补充测试或调整。
 
@@ -43,7 +46,7 @@
 - **后端**：Java 17、MyBatis-Plus、遵循现有 `org.erp.*` 包结构与命名；新业务表须带 `tenant_id` 与 `del_flag`；单号走 `SequenceService`；导出走公共 Excel；写操作加权限注解。
 - **前端**：Vue 3 + TS + **TDesign Vue Next**；禁止引入 Element Plus 组件或新 `--el-*` 变量；样式优先用 `src/assets/styles/variables.module.scss` 的 `--app-*` token 与 `.erp-*` 语义 class；表单/表格遵循现有页面模式（见 [docs/ui-migration.md](docs/ui-migration.md)）。
 - **不要提交**：`.env*`（密钥、品牌配置）、`dist/`、`node_modules/`、构建产物、IDE 配置、任何真实凭据、客户信息、内部文档。
-- **安全**：发现漏洞请私信项目方，不要开公开 issue。
+- **安全**：发现漏洞请按 [SECURITY.md](SECURITY.md) 私下报告，不要开公开 issue。
 
 ## 4. 贡献范围
 

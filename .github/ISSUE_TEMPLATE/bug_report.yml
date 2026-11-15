@@ -1,0 +1,75 @@
+name: Bug 报告
+description: 报告一个可以复现的问题
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈。提交前请先搜索已有 issue，避免重复。
+        安全问题请走 [SECURITY.md](../blob/main/SECURITY.md)，不要在这里公开。
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 问题描述
+      description: 实际发生了什么？期望是什么？
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 打开 …
+        2. 点击 …
+        3. 看到 …
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: 影响范围
+      options:
+        - 基础资料（商品/供应商/客户/仓库）
+        - 采购（入库/退货/订单）
+        - 销售（出库/退货/订单）
+        - 库存（流水/期初/其他出入库）
+        - 财务（应收应付/收付款/结算账户/对账单）
+        - 打印模板
+        - 系统管理（用户/角色/菜单/租户）
+        - 部署（Docker Compose / Nginx）
+        - 前端交互与样式
+        - 其他
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: 版本或提交
+      description: 例如 `09d9f54`，或镜像 tag
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: 运行环境
+      placeholder: |
+        部署方式：Docker Compose / 本地 mvn + pnpm
+        JDK / Node / pnpm：
+        MySQL / Redis：
+        浏览器：
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志或截图
+      description: 后端异常栈、浏览器 Console、相关截图。请先脱敏。
+      render: shell
+    validations:
+      required: false

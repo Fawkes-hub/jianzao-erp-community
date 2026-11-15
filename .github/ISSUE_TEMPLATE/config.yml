@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 安全问题
+    url: https://github.com/Fawkes-hub/jianzao-erp-community/security/advisories/new
+    about: 请通过 Security Advisory 私下报告，不要开公开 issue
+  - name: 商业授权
+    url: https://github.com/Fawkes-hub/jianzao-erp-community/issues/new
+    about: 闭源集成 / OEM / 不公开改动的网络服务，请开 issue 并标注「商业授权」
