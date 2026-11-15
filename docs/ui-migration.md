@@ -1,6 +1,6 @@
 # 从 Element Plus 迁移到 TDesign：实践笔记
 
-简造ERP社区版的前端由 plus-ui（Element Plus）全量迁移到 **TDesign Vue Next 1.20**，涉及 74 个视图、2,800+ 处组件标签。本文记录可复用的做法与踩过的坑。
+简造ERP社区版的前端由 plus-ui（Element Plus）全量迁移到 **TDesign Vue Next 1.20**，涉及 75 个视图、2,800+ 处组件标签。本文记录可复用的做法与踩过的坑。
 
 ## 1. 先说结论：这是一次「组件层」迁移
 

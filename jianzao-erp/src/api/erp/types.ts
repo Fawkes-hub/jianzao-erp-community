@@ -1383,3 +1383,130 @@ export interface PurchaseReturnQuery extends PageQuery {
   status?: string;
 }
 
+
+/* ------------------------------ 工作台 ------------------------------ */
+
+export interface DashboardDraftTodos {
+  saleDrafts?: number;
+  purchaseDrafts?: number;
+  receiptDrafts?: number;
+  paymentDrafts?: number;
+}
+
+export interface DashboardRecentDoc {
+  /** SALE / PURCHASE / RECEIPT / PAYMENT */
+  type: string;
+  no?: string;
+  bizDate?: string;
+  amount?: ErpAmount;
+}
+
+export interface DashboardStockAlertItemVO {
+  productId: ErpId;
+  productName?: string;
+  totalQty: ErpAmount;
+  gap: ErpAmount;
+}
+
+export interface DashboardStockAlertVO {
+  lowCount: number;
+  highCount: number;
+  lowTop5: DashboardStockAlertItemVO[];
+  highTop5: DashboardStockAlertItemVO[];
+}
+
+export interface DashboardSummaryVO {
+  /** 本月销售额 */
+  monthSales: ErpAmount;
+  /** 本月毛利 */
+  monthGrossProfit: ErpAmount;
+  /** 本月销售毛利率百分数（后端计算） */
+  monthGrossMargin?: ErpAmount;
+  /** 未收账款 */
+  unreceived: ErpAmount;
+  /** 未付账款 */
+  unpaid: ErpAmount;
+  /** 本月收款 */
+  monthReceiptAmount: ErpAmount;
+  /** 本月采购额（含运杂费） */
+  monthPurchaseAmount: ErpAmount;
+  /** 成品库存数量 */
+  finishedStockQty: ErpAmount;
+  /** 成品库存金额 */
+  finishedStockAmount: ErpAmount;
+  /** 原料库存数量 */
+  materialStockQty: ErpAmount;
+  draftTodos: DashboardDraftTodos;
+  recentDocs: DashboardRecentDoc[];
+}
+
+export interface DashboardTrendVO {
+  months: string[];
+  sales: ErpAmount[];
+  cost: ErpAmount[];
+  receipts: ErpAmount[];
+  profit: ErpAmount[];
+}
+
+/** 往来单位当月明细单据 */
+export interface DashboardPartnerDoc {
+  /** SALE / PURCHASE / RECEIPT / PAYMENT */
+  type: string;
+  no?: string;
+  bizDate?: string;
+  amount?: ErpAmount;
+  /** 销售单毛利，其余类型为空 */
+  grossProfit?: ErpAmount;
+  remark?: string;
+}
+
+/** 往来单位当月明细 */
+export interface DashboardPartnerMonthVO {
+  partyType: ErpPartnerType;
+  partyId: ErpId;
+  partyName?: string;
+  /** 统计月份 yyyy-MM */
+  month?: string;
+  /** 本月单据数（客户=销售单数，供货商=采购单数） */
+  docCount?: number;
+  /** 本月销售金额 */
+  salesAmount: ErpAmount;
+  /** 本月销售毛利 */
+  grossProfit: ErpAmount;
+  /** 本月销售毛利率百分数 */
+  grossMargin?: ErpAmount;
+  /** 本月采购金额（含运杂费） */
+  purchaseAmount: ErpAmount;
+  /** 本月收款 */
+  receiptAmount: ErpAmount;
+  /** 本月付款 */
+  paymentAmount: ErpAmount;
+  docs: DashboardPartnerDoc[];
+}
+
+/** 往来单位本月排行条目 */
+export interface DashboardPartnerRankItem {
+  partyId: ErpId;
+  partyName?: string;
+  partyCode?: string;
+  /** 本月发生额（客户=销售金额，供货商=采购金额） */
+  amount: ErpAmount;
+  /** 本月单据数 */
+  docCount?: number;
+  /** 本月毛利（仅客户口径） */
+  grossProfit?: ErpAmount;
+  /** 本月毛利率百分数（仅客户口径） */
+  grossMargin?: ErpAmount;
+  /** 本月收款（客户口径） */
+  receiptAmount?: ErpAmount;
+  /** 本月付款（供货商口径） */
+  paymentAmount?: ErpAmount;
+}
+
+/** 往来单位本月排行 */
+export interface DashboardPartnerRankVO {
+  partyType: ErpPartnerType;
+  /** 统计月份 yyyy-MM */
+  month?: string;
+  items: DashboardPartnerRankItem[];
+}

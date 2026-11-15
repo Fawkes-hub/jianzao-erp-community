@@ -18,6 +18,10 @@ INSERT IGNORE INTO sys_menu VALUES
 ('3230', '财务管理', '0', '6', 'erp-finance', NULL, '', 1, 0, 'M', '0', '0', '', 'money', 103, 1, NOW(), NULL, NULL, '财务结算模块'),
 ('3260', '采购管理', '0', '3', 'erp-purchase', NULL, '', 1, 0, 'M', '0', '0', '', 'shopping', 103, 1, NOW(), NULL, NULL, '采购业务模块');
 
+-- 工作台（一级入口）：只读看板，登录即可访问
+INSERT IGNORE INTO sys_menu VALUES
+('3010', '工作台', '0', '1', 'dashboard', 'erp/dashboard/index', '', 1, 0, 'C', '0', '0', 'erp:dashboard:view', 'dashboard', 103, 1, NOW(), NULL, NULL, '工作台');
+
 -- 采购管理：采购入库
 INSERT IGNORE INTO sys_menu VALUES
 ('3020', '采购入库', '3260', '1', 'purchase', 'erp/purchase/index', '', 1, 0, 'C', '0', '0', 'erp:purchase:list', 'shopping-cart', 103, 1, NOW(), NULL, NULL, '采购入库'),
@@ -289,6 +293,9 @@ INSERT IGNORE INTO sys_role_menu (role_id, menu_id) VALUES
 (5, 3280), (5, 3281), (5, 3282), (5, 3283), (5, 3284), (5, 3285), (5, 3286), (5, 3287),
 (6, 3270), (6, 3271), (6, 3272), (6, 3273), (6, 3275),
 (6, 3280), (6, 3281), (6, 3282), (6, 3283), (6, 3285);
+
+-- 工作台对所有内置角色可见
+INSERT IGNORE INTO sys_role_menu (role_id, menu_id) VALUES (5, 3010), (6, 3010);
 
 
 
