@@ -9,7 +9,7 @@
     <version>${revision}</version>
 
     <name>jianzao-backend</name>
-    <url>https://github.com/ORG_PLACEHOLDER/jianzao-erp-community.git</url>
+    <url>https://github.com/Fawkes-hub/jianzao-erp-community.git</url>
     <description>简造ERP社区版后端服务底座</description>
 
     <properties>

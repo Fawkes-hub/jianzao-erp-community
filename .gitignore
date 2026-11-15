@@ -10,10 +10,12 @@ build/
 !pnpm-lock.yaml
 
 # 环境变量：密钥与品牌配置一律不入库
-# 公开仓只保留 .env.example；任何 *.local / .env.production / .env.localwin 属私有
+# 公开仓只保留无密钥的模板；任何 *.local / 带真实凭据的 .env 不入库
 .env
 .env.*
 !.env.example
+!.env.development
+!.env.production
 
 # 编辑器 / 系统
 .idea/
@@ -32,6 +34,8 @@ src/types/components.d.ts
 
 # 本地数据与备份
 deploy/.env
+deploy/app/
+deploy/frontend-dist/
 deploy/environments/*.conf
 deploy/backup/
 deploy/data/

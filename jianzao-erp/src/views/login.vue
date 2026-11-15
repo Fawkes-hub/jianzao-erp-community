@@ -234,8 +234,8 @@ const loginRules = computed<Record<string, any>>(() => {
 });
 
 const loading = ref(false);
-// 验证码开关
-const captchaEnabled = ref(true);
+// 验证码开关（默认 false，等 /auth/tenant/list 返回后再按后端配置打开）
+const captchaEnabled = ref(false);
 // 租户开关
 const tenantEnabled = ref(true);
 // 域名/列表唯一命中时隐藏公司选择框

@@ -70,7 +70,7 @@ SOFTWARE.
 
 ### 1.2 初始化 SQL
 
-`deploy/mysql/init/01-ruoyi-system.sql` 复制自 `jianzao-backend/script/sql/`，MIT，来源同上。**发布前须在该文件头部补一行 MIT 版权与许可声明**（当前缺文件内声明）。
+`deploy/mysql/init/01-ruoyi-system.sql` 复制自 `jianzao-backend/script/sql/`，MIT，来源同上。文件头部已保留 MIT 版权与许可声明。
 
 ---
 
@@ -115,29 +115,36 @@ SOFTWARE.
 
 ---
 
-## 4. ⚠️ 发布前必须处理的授权未明项
+## 4. 素材授权状态
 
-以下素材当前**授权状态不明或缺乏许可证声明**，在源码导入前必须替换、取得授权或移除，不得随开源仓分发：
+### 4.1 已移除（原先授权不明）
 
-| 项 | 位置 | 问题 |
+以下素材已从本仓库移除，不再分发：
+
+| 项 | 原位置 | 处理 |
 |---|---|---|
-| 天爱验证码 SDK | `jianzao-erp/public/tac/js/tac.min.js`、`tac.css`、`images/dun.jpeg` | 压缩 SDK 无任何 license / `@license` / copyright 头 |
-| 登录背景图 | `jianzao-erp/src/assets/images/login-background.jpg` | 来源与授权不明 |
-| 默认头像 | `jianzao-erp/src/assets/images/profile.jpg` | 来源与授权不明 |
-| 第三方品牌图标 | `jianzao-erp/src/assets/icons/svg/` 中 wechat / qq / github / gitee / maxkey / topiam / swagger / druid 等 | 商标与字形授权混杂 |
-| 错误页插画 | `jianzao-erp/src/assets/401_images/401.gif`、`404_images/*` | RuoYi 时代遗留，需核实上游授权并补归因 |
+| 天爱验证码 SDK | `jianzao-erp/public/tac/` | 已移除；滑块验证码因此默认关闭，见后端 `captcha.enable` 注释 |
+| 登录背景图 | `jianzao-erp/src/assets/images/login-background.jpg` | 已移除，登录页改用自绘 SVG 蓝图背景 |
+| 默认头像 | `jianzao-erp/src/assets/images/profile.jpg` | 已替换为 `profile.svg` |
+| 错误页插画 | `jianzao-erp/src/assets/401_images/401.gif` | 已移除，仅保留 SVG 版本 |
+
+### 4.2 仍随仓库分发
+
+| 项 | 位置 | 说明 |
+|---|---|---|
+| 第三方品牌图标 | `jianzao-erp/src/assets/icons/svg/` 中 wechat / qq / github / gitee / maxkey / topiam / swagger / druid 等 | 随上游 MIT 项目分发；商标权仍归各权利人，此处仅作界面标识使用，不构成商标授权 |
 
 字体无风险：全站为系统字体栈（MiSans / HarmonyOS Sans SC / PingFang SC / Noto Sans SC / Microsoft YaHei），未引入任何 Web 字体文件。
 
 ---
 
-## 5. 发布前核对清单
+## 5. 发布状态
 
-- [ ] `jianzao-backend/LICENSE` 原文保留
-- [ ] `jianzao-erp/LICENSE` 原文保留
-- [ ] `deploy/mysql/init/01-ruoyi-system.sql` 补 MIT 头
-- [ ] `VENDOR.md`（上游来源与本地改动清单）保留
-- [ ] §4 授权未明项全部替换或移除
-- [ ] 根 `LICENSE` 为 AGPL-3.0 官方全文（未修改）
-- [ ] `package.json` 的 `license` 字段同步为 `AGPL-3.0`
+- [x] `jianzao-backend/LICENSE` 原文保留
+- [x] `jianzao-erp/LICENSE` 原文保留
+- [x] `deploy/mysql/init/01-ruoyi-system.sql` 已含 MIT 版权头
+- [x] `VENDOR.md`（上游来源与本地改动清单）保留
+- [x] §4.1 授权未明素材已移除
+- [x] 根 `LICENSE` 为 AGPL-3.0 官方全文（未修改）
+- [x] `package.json` 的 `license` 字段为 `AGPL-3.0`
 - [ ] 新增自研源码文件头标注版权与 AGPL-3.0（建议，非强制）

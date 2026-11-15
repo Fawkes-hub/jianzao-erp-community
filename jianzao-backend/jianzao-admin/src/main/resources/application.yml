@@ -22,7 +22,10 @@ server:
 
 captcha:
   # 是否启用验证码校验
-  enable: true
+  # 默认关闭：登录页的滑块组件依赖第三方 tac SDK（/public/tac），该 SDK 未随本仓库分发。
+  # 开启前需自备已授权的 SDK 放入 jianzao-erp/public/tac/，再设为 true；
+  # 登录接口本身有 @RateLimiter（20 次/分钟/IP）兜底。
+  enable: false
   # 验证码类型 math 数组计算 char 字符验证
   type: math
   # 数字验证码位数
@@ -168,18 +171,23 @@ mybatis-encryptor:
   publicKey:
   privateKey:
 
-# api接口加密
+# api 接口加密
+# 默认关闭：本地开发与 Docker Compose 均按前端 VITE_APP_ENCRYPT=false 运行，传输安全依赖 HTTPS。
+# 如需开启（同时加密请求体与响应体）：
+#   1) 生成 1024 位密钥对：
+#        openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:1024 -out private.pem
+#        openssl rsa -in private.pem -pubout -out public.pem
+#   2) 去掉 PEM 头尾与换行，把 Base64 单行文本填入下面的 publicKey / privateKey
+#   3) 前端 .env 填同一对密钥，并设 VITE_APP_ENCRYPT=true
+# 注意：只配一边时，带 @ApiEncrypt 的接口（如 /login）会被 CryptoFilter 直接返回 403。
 api-decrypt:
-  # 是否开启全局接口加密
-  enabled: true
+  enabled: false
   # AES 加密头标识
   headerFlag: encrypt-key
-  # 响应加密公钥 非对称算法的公私钥 如：SM2，RSA 使用者请自行更换
-  # 示例密钥已替换为占位值；部署前请自行生成 RSA 密钥对并同步前端 .env 的 VITE_APP_RSA_*ZMpLH8wIDAQABAkEAk82Mhz0tlv6IVCyIcw/s3f0E+WLmtPFyR9/WtV3Y5aaejUkU60JpX4m5xNR2VaqOLTZAYjW8Wy0aXr3zYIhhQQIhAMfqR9oFdYw1J9SsNc+CrhugAvKTi0+BF6VoL6psWhvbAiEAxPPNTmrkmrXwdm/pQQu3UOQmc2vCZ5tiKpW10CgJi8kCIFGkL6utxw93Ncj4exE/gPLvKcT+1Emnoox+O9kRXss5AiAMtYLJDaLEzPrAWcZeeSgSIzbL+ecokmFKSDDcRske6QIgSMkHedwND1olF8vlKsJUGK3BcdtM8w4Xq7BpSBwsloE=
-  publicKey: REPLACE_WITH_YOUR_RSA_PUBLIC_KEY=
-  # 请求解密私钥 非对称算法的公私钥 如：SM2，RSA 使用者请自行更换
-  # 与前端 VITE_APP_RSA_PRIVATE_KEY 配对=
-  privateKey: REPLACE_WITH_YOUR_RSA_PRIVATE_KEYKNPuH3owIDAQABAkAfoiLyL+Z4lf4Myxk6xUDgLaWGximj20CUf+5BKKnlrK+Ed8gAkM0HqoTt2UZwA5E2MzS4EI2gjfQhz5X28uqxAiEA3wNFxfrCZlSZHb0gn2zDpWowcSxQAgiCstxGUoOqlW8CIQDDOerGKH5OmCJ4Z21v+F25WaHYPxCFMvwxpcw99EcvDQIgIdhDTIqD2jfYjPTY8Jj3EDGPbH2HHuffvflECt3Ek60CIQCFRlCkHpi7hthhYhovyloRYsM+IS9h/0BzlEAuO0ktMQIgSPT3aFAgJYwKpqRYKlLDVcflZFCKY7u3UP8iWi1Qw0Y=
+  # 响应加密公钥（Base64，不含 PEM 头尾）
+  publicKey: ''
+  # 请求解密私钥（Base64，不含 PEM 头尾）
+  privateKey: ''
 
 springdoc:
   api-docs:
@@ -196,7 +204,7 @@ springdoc:
     contact:
       name: Fawkes
       email: fawkes@example.com
-      url: https://github.com/ORG_PLACEHOLDER/jianzao-erp-community
+      url: https://github.com/Fawkes-hub/jianzao-erp-community
   #这里定义了两个分组，可定义多个，也可以不定义
   group-configs:
     - group: 1.通用模块

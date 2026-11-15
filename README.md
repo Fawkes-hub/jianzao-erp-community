@@ -21,7 +21,7 @@
 
 ## 为什么值得看
 
-- **全量 TDesign 前端**：3,100+ 处 TDesign 组件实例、110+ 个页面，Element Plus 依赖与模板标签已彻底移除；配套自研 token 体系、亮/暗双主题、`TDesignResolver` 组件自动导入、`.erp-*` 语义 class 库。RuoYi 系项目大多仍停在 Element Plus —— 这是一套可直接复用的现代化迁移实践，见 [docs/ui-migration.md](docs/ui-migration.md)。
+- **全量 TDesign 前端**：2,800+ 处 TDesign 组件标签、74 个视图（其中 22 个 ERP 业务页），Element Plus 依赖与模板标签已彻底移除；配套自研 token 体系、亮/暗双主题、`TDesignResolver` 组件自动导入、`.erp-*` 语义 class 库。RuoYi 系项目大多仍停在 Element Plus —— 这是一套可直接复用的现代化迁移实践，见 [docs/ui-migration.md](docs/ui-migration.md)。
 - **现代栈骨架**：Spring Boot 3.5 / Java 17 / Vue 3 / Vite 7，不是老一代 jQuery 或 Vue 2 底座。
 - **完整闭环而非演示**：基础资料、采购/销售与退货、其他出入库、库存流水与期初、应收应付与收付款核销、结算账户、综合成本、月度对账单、单据打印、采购/销售订单分批执行 —— 都能跑通。
 - **干净的可读历史**：按里程碑重建的提交演进（见 [docs/history.md](docs/history.md)）。
@@ -45,23 +45,64 @@
 
 ## 快速开始
 
+环境要求：JDK 17（运行可用 JRE 21）、Node 20+、pnpm、Maven 3.9+、Docker。
+
+### 方式 A：Docker Compose（完整部署）
+
+Compose 只消费构建产物，需先生成 JAR 与静态文件：
+
 ```bash
-git clone https://github.com/ORG_PLACEHOLDER/jianzao-erp-community.git
+git clone https://github.com/Fawkes-hub/jianzao-erp-community.git
 cd jianzao-erp-community
 
-# 后端：先装底座，再装业务模块，最后启动
+# 1) 后端 JAR → deploy/app/erp.jar
+cd jianzao-backend && mvn clean install -DskipTests && cd ..
+cd erp-modules  && mvn clean install -DskipTests && cd ..
+cd jianzao-backend/jianzao-admin && mvn -Pprod package -DskipTests && cd ../..
+mkdir -p deploy/app && cp jianzao-backend/jianzao-admin/target/jianzao-admin.jar deploy/app/erp.jar
+
+# 2) 前端静态文件 → deploy/frontend-dist/
+cd jianzao-erp && pnpm install --frozen-lockfile && pnpm build:prod && cd ..
+rm -rf deploy/frontend-dist && cp -r jianzao-erp/dist deploy/frontend-dist
+
+# 3) 起 MySQL + Redis + App + Nginx
+cd deploy && cp .env.example .env
+vi .env          # 改 4 个必填项：MYSQL_ROOT_PASSWORD / MYSQL_PASSWORD / REDIS_PASSWORD / JWT_SECRET
+docker compose up -d
+```
+
+访问 `http://localhost`，账号 `admin` / `admin123`（登录后立即改密）。详细说明见 [deploy/README.md](deploy/README.md)。
+
+### 方式 B：本地开发
+
+只起 MySQL + Redis（首次启动会自动执行 `deploy/mysql/init/` 下的 SQL），后端跑 `dev` profile，前端走 Vite：
+
+```bash
+cd deploy && cp .env.example .env
+# .env 改成与 application-dev.yml 一致：MYSQL_ROOT_PASSWORD=localroot123、REDIS_PASSWORD=ruoyi123
+# 并在 docker-compose.yml 中取消 redis 的 ports 注释
+docker compose up -d mysql redis
+cd ..
+
+# 后端（8080）
 cd jianzao-backend && mvn clean install -DskipTests && cd ..
 cd erp-modules  && mvn clean install -DskipTests && cd ..
 cd jianzao-backend/jianzao-admin && mvn spring-boot:run
 
-# 前端
-cd jianzao-erp && pnpm install && pnpm dev
-
-# 或一键起（MySQL + Redis + App + Nginx）
-cd deploy && cp .env.example .env && docker compose up -d
+# 前端（另开终端，5173）
+cd jianzao-erp && pnpm install --frozen-lockfile && pnpm dev
 ```
 
-环境要求：JDK 17（运行可用 JRE 21）、Node 20+、pnpm、Maven 3.9+、Docker（可选）。
+访问 `http://localhost:5173`。前端环境变量已内置在 `.env.development` / `.env.production`，个人覆盖写进 `*.local`（已 gitignore）。
+
+## 已知限制
+
+- **滑块验证码默认关闭**：登录页的滑块组件依赖第三方 tac SDK，该 SDK 授权不明，未随仓库分发；后端 `captcha.enable` 默认 `false`，登录接口仍有 20 次/分钟/IP 的限流兜底。需要验证码时请自备已授权 SDK 放入 `jianzao-erp/public/tac/` 再把 `captcha.enable` 设为 `true`。
+- **接口加密默认关闭**：传输安全依赖 HTTPS。开启方式见 `jianzao-backend/.../application.yml` 中 `api-decrypt` 的注释。
+
+## 安全
+
+漏洞请通过 GitHub Security Advisory 私下报告，不要开公开 issue。部署前的必做项见 [SECURITY.md](SECURITY.md)。
 
 ## 许可证与品牌
 
@@ -85,6 +126,7 @@ jianzao-erp-community/
 ├── deploy/              # Docker Compose / Nginx / 初始化 SQL
 ├── docs/                # 公开技术文档
 ├── LICENSE              # AGPL-3.0 全文
+├── SECURITY.md
 ├── THIRD_PARTY_NOTICES.md
 ├── TRADEMARK.md
 ├── COMMERCIAL.md

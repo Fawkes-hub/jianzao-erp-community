@@ -1,92 +1,93 @@
-# ERP 服务端部署（Docker Compose）
+# 部署（Docker Compose）
 
-> 详细说明见 [DOC/15-部署与运维手册.md](../DOC/15-部署与运维手册.md)。
+四个容器：`nginx`（静态资源 + 反向代理）、`erp-app`（Spring Boot）、`mysql` 8.0、`redis` 7.2。
+只有 Nginx 映射宿主机端口，MySQL / Redis 仅在内网可达。
 
-## 组成
+本目录只包含 Compose 定义、Dockerfile、Nginx 配置与初始化 SQL，**不含构建脚本**——构建产物需要你自己生成（见下）。
 
-- `nginx`：静态资源 + 反向代理（对外 80/443）
-- `erp-app`：Spring Boot 应用（内部 8080）
-- `mysql`：MySQL 8.0（内部 3306）
-- `redis`：Redis 7.2（内部 6379）
+## 1. 准备构建产物
 
-只有 Nginx 映射宿主机端口；MySQL/Redis 不暴露公网。
+Compose 消费两个本地目录，二者都不入库：
 
-## 首次部署
+**后端 JAR → `deploy/app/erp.jar`**
 
-1. **构建后端 JAR**（需 JDK 17+，在 `deploy/` 目录执行；等价于仓库根目录的 `./deploy/build_backend.sh`）：
-   ```bash
-   ./build_backend.sh
-   ```
-   脚本会构建并复制到 `deploy/app/erp.jar`。
-2. **构建前端并部署**（脚本会构建 + 同步到 `deploy/plus-ui-dist/` + 重启 nginx）：
-   ```bash
-   ./deploy_frontend.sh
-   ```
-3. **准备数据库脚本**：把 RuoYi-Vue-Plus 系统 SQL + ERP 表结构/种子数据放到 `deploy/mysql/init/`（MySQL 首次启动时按文件名顺序执行）。
-4. **配置环境**：
-   ```bash
-   cp .env.example .env
-   vi .env          # 改密码、端口、域名
-   chmod 600 .env
-   ```
-5. **一键安装**：
-   ```bash
-   ./install.sh
-   ```
-6. 浏览器访问 `http://<服务器IP>:<HTTP_PORT>`，用 `admin` 和初始密码登录，立即改密。
+```bash
+# 底座 → 业务模块 → 可执行包，顺序不能颠倒
+cd jianzao-backend && mvn clean install -DskipTests
+cd ../erp-modules && mvn clean install -DskipTests
+cd ../jianzao-backend/jianzao-admin && mvn -Pprod package -DskipTests
+mkdir -p ../../deploy/app
+cp target/jianzao-admin.jar ../../deploy/app/erp.jar
+```
+
+**前端静态文件 → `deploy/frontend-dist/`**
+
+```bash
+cd jianzao-erp
+pnpm install --frozen-lockfile
+pnpm build:prod
+rm -rf ../deploy/frontend-dist
+cp -r dist ../deploy/frontend-dist
+```
+
+## 2. 配置环境变量
+
+```bash
+cd deploy
+cp .env.example .env
+chmod 600 .env
+```
+
+`.env` 里四项必须改，且不要复用示例值：
+
+| 变量 | 说明 |
+|---|---|
+| `MYSQL_ROOT_PASSWORD` | MySQL root 密码 |
+| `MYSQL_PASSWORD` | 应用账号密码 |
+| `REDIS_PASSWORD` | Redis 密码 |
+| `JWT_SECRET` | Sa-Token 签名密钥，`openssl rand -hex 32` 生成 |
+
+公网部署还要设 `SECURITY_CORS_ALLOWED_ORIGINS`（逗号分隔），否则浏览器带 `Origin` 的 POST 会被 CORS 过滤器判为非法跨域并返回 403。
+
+## 3. 启动
+
+```bash
+docker compose up -d
+docker compose ps          # 等 mysql / redis / erp-app 全部 healthy
+```
+
+首次启动时 MySQL 会按文件名顺序执行 `mysql/init/` 下的脚本（01 系统表 → 04 ERP 表结构 → 05 菜单与种子 → 06 图标）。
+访问 `http://<服务器IP>:${HTTP_PORT:-80}`，用 `admin` / `admin123` 登录（与上游 RuoYi 默认一致），登录后立即改密。
 
 ## 常用命令
 
 ```bash
-docker compose ps
 docker compose logs -f --tail=200 erp-app
 docker compose restart erp-app
-./deploy_frontend.sh          # 构建前端并部署到 nginx
-./backup.sh
-./restore.sh ./backup/20261031-020000
-./upgrade.sh 1.1.0
+docker compose down            # 保留数据卷
+docker compose down -v         # 连数据一起删除，谨慎
 ```
-
-## 远程发版（release.sh）
-
-本地构建 → rsync 产物与部署定义 → 远端 `upgrade.sh` 升级 → 探活。
-
-```bash
-./deploy/release.sh --list                          # 查看可用环境
-./deploy/release.sh --env vps                       # 交互式：选范围 → 确认 → 构建发版
-./deploy/release.sh --env vps --scope frontend -y   # 只发前端
-./deploy/release.sh --env vps --skip-build -y       # 复用已有 jar/dist，快速推送
-./deploy/release.sh --env vps --skip-build --jar ./out/erp.jar --dist ./out/dist -y
-./deploy/release.sh --env vps --dry-run             # 只打印命令，不做改动
-```
-
-行为说明：
-
-- **部署定义每次同步**：`docker-compose.yml`、`Dockerfile.app`、`upgrade.sh`、`backup.sh`、`restore.sh`、`nginx/conf.d/`、`mysql/patches/`。新增 SQL 迁移后不会再出现远端 `patch not found`；但仍需把新补丁追加到 `upgrade.sh` 的 `UPGRADE_PATCHES`。
-- **覆盖前留档**：旧的 `plus-ui-dist` 与部署定义会打成 `backup/ui-<时间>.tgz` / `backup/deploy-<时间>.tgz`，保留 30 天。
-- **jar 按 sha256 跳过**：本地 jar 与远端一致时不重复上传 142MB。
-- **nginx 按需 reload**：静态文件由 nginx 直接读盘；只有 `nginx/conf.d/` 内容变化才校验并 reload，避免每次发版约 5 秒的 502。
-- **镜像 tag 唯一**：`--version` 指定的 tag 若已存在会直接拒绝，防止覆盖 `upgrade.sh` 回滚用的旧镜像。
-- **探活**：后端用容器内 actuator 校验，入口再用 `HTTP_CHECK` 检查 HTTP 200。
-
-环境文件：`deploy/environments/<name>.conf`（不入库，参考 `vps.conf.example`）。
 
 ## 数据与备份
 
-- 上传文件：`./data/uploads`
 - 数据库：Docker 卷 `mysql-data`
-- 备份：`./backup/<时间戳>/db.sql.gz` + `uploads.tar.gz`，默认保留 30 天
-- 恢复前请先备份当前数据；恢复后检查登录、单据、库存、打印
+- Redis：Docker 卷 `redis-data`
+- 应用数据（上传文件、临时目录）：`./data`
+- 备份：`docker compose exec mysql mysqldump -uroot -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE" | gzip > backup-$(date +%F).sql.gz`
 
-## 多客户
+恢复前先停 `erp-app`，恢复后检查登录、单据、库存与打印。
 
-同一服务器跑多个客户时：
+## HTTPS
 
-- 每个客户复制一份 `deploy/` 到独立目录；
-- `.env` 中设置不同的 `COMPOSE_PROJECT_NAME`、`HTTP_PORT`、`MYSQL_DATABASE`、密码；
-- 用不同域名/端口分流；数据卷/容器互不干扰。
+`nginx/conf.d/erp.conf` 默认只监听 80。启用 HTTPS 时取消该文件底部的 443 server 块注释，把证书放到 `nginx/certs/`（`fullchain.pem` / `privkey.pem`），再 `docker compose restart nginx`。
 
-## 本地 Windows 单机包
+## 端口与网络
 
-客户电脑免安装使用（双击 ERP.exe，内嵌 MySQL/Redis/JRE）见
-[local-win/README.md](local-win/README.md)，由 GitHub Actions `build-win-package` 工作流构建。
+| 服务 | 宿主机 | 容器内 |
+|---|---|---|
+| nginx | `${HTTP_PORT:-80}` / `${HTTPS_PORT:-443}` | 80 / 443 |
+| mysql | `127.0.0.1:${MYSQL_PORT:-13306}` | 3306 |
+| redis | 不映射 | 6379 |
+| erp-app | 不映射 | 8080 |
+
+MySQL / Redis 绑定在回环地址或完全不映射，不要把 3306 / 6379 暴露到公网。

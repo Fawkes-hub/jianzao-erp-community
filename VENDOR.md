@@ -22,12 +22,12 @@
 
 - 原上游：https://github.com/CrazyLionCat/plus-ui（基于 5.X，已彻底剥离解耦，独立维护）
   - 注：该仓库当前默认分支为 `6.X-Vue`；本项目锁定的是 **5.X** 时期的快照，不再跟随上游分支
-- 本项目仓库：https://github.com/ORG_PLACEHOLDER/jianzao-erp-community.git （子目录 `jianzao-erp`）
+- 本项目仓库：https://github.com/Fawkes-hub/jianzao-erp-community.git （子目录 `jianzao-erp`）
 - 许可证：MIT（见 `jianzao-erp/LICENSE`）
 - 本地定制：
   - 工程与目录名称统一定为 `jianzao-erp`；`package.json` 包名 `jianzao-erp` / `1.0.0`
   - 品牌名称“简造ERP社区版”（全称：简造ERP社区版）
-  - 组件库从 Element Plus 全量迁至 **TDesign Vue Next 1.20.10**（DOC/35），已删除 `element-plus` / `@element-plus/icons-vue` 依赖及全部源码引用
+  - 组件库从 Element Plus 全量迁至 **TDesign Vue Next 1.20.10**，已删除 `element-plus` / `@element-plus/icons-vue` 依赖及全部源码引用
   - 关闭前端应用层 RSA 加密（`VITE_APP_ENCRYPT=false`，依赖 HTTPS）
   - `src/views/erp/` ERP 业务页面
 - 更新策略：**组件库已整体替换、代码已完全剥离，独立自主演进，不再与上游同步**。
