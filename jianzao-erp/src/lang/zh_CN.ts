@@ -19,12 +19,12 @@ export default {
     switchRegisterPage: '注册新账号',
     noAccount: '没有账号？',
     contactAdmin: '请联系管理员开通账号',
-    brandTag: '机加五金版',
+    brandTag: '社区版',
     headlinePrefix: '登录到',
     copyright: 'Copyright © 2026 简造ERP社区版',
-    headline: '专为五金机加小厂量身定制',
-    subhead: '微信语音发单 · 月底一键对账',
-    slogan: '专为五金机加小厂量身定制 · 微信语音发单 · 月底一键对账',
+    headline: '采购 · 销售 · 库存 · 财务一体化',
+    subhead: '基础进销存闭环 · 开源可二次开发',
+    slogan: '采购 · 销售 · 库存 · 财务一体化 · 开源可二次开发',
     rule: {
       tenantId: {
         required: '请输入您的租户编号'

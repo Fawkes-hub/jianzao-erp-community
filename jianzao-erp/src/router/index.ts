@@ -64,7 +64,8 @@ export const constantRoutes: RouteRecordRaw[] = [
   },
   {
     path: '',
-    redirect: '/dashboard'
+    // 社区版不含工作台，登录后落到库存查询
+    redirect: '/erp-doc/stock'
   },
   {
     path: '/user',
