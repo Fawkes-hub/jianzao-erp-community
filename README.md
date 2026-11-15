@@ -1,5 +1,7 @@
 # 简造ERP社区版
 
+[![CI](https://github.com/Fawkes-hub/jianzao-erp-community/actions/workflows/ci.yml/badge.svg)](https://github.com/Fawkes-hub/jianzao-erp-community/actions/workflows/ci.yml)
+
 > 一套现代栈、可直接 fork 二次开发的基础进销存骨架。
 >
 > **简造ERP社区版**是简造 ERP 的开源社区发行版，专注基础资料与 PC 端进销存操作功能。
