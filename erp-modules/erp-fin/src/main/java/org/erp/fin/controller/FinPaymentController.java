@@ -10,6 +10,7 @@ import org.dromara.common.log.enums.BusinessType;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.common.web.core.BaseController;
+import org.erp.common.security.ConfirmPermission;
 import org.erp.fin.domain.bo.FinPaymentBo;
 import org.erp.fin.domain.vo.FinPaymentVo;
 import org.erp.fin.service.IFinPaymentService;
@@ -46,6 +47,8 @@ public class FinPaymentController extends BaseController {
     @RepeatSubmit
     @PostMapping
     public R<FinPaymentVo> add(@Valid @RequestBody FinPaymentBo bo) {
+        // confirm=true 会在同一事务内直接核销往来，必须同时具备确认权限，避免仅新增权限绕过审核
+        ConfirmPermission.check("erp:finance:payment:confirm", bo.getConfirm());
         return R.ok(paymentService.insert(bo));
     }
 
@@ -54,6 +57,7 @@ public class FinPaymentController extends BaseController {
     @RepeatSubmit
     @PutMapping("/{id}")
     public R<FinPaymentVo> edit(@PathVariable Long id, @Valid @RequestBody FinPaymentBo bo) {
+        ConfirmPermission.check("erp:finance:payment:confirm", bo.getConfirm());
         return R.ok(paymentService.update(id, bo));
     }
 
