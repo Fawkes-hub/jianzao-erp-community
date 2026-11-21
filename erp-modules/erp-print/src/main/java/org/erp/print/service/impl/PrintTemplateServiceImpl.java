@@ -187,7 +187,7 @@ public class PrintTemplateServiceImpl implements IPrintTemplateService {
     }
 
     private void validateScene(String scene) {
-        List<String> allowed = List.of("SALE_DELIVERY", "STATEMENT", "PURCHASE_IN",
+        List<String> allowed = List.of("SALE_DELIVERY", "STATEMENT", "STATEMENT_RANGE", "PURCHASE_IN",
             "RECEIPT", "PAYMENT");
         if (!allowed.contains(scene)) {
             throw new ServiceException("不支持的场景：" + scene);

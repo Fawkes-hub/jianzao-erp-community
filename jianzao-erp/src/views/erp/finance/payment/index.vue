@@ -77,6 +77,11 @@
                     <template #icon><CloseCircleIcon /></template>
                   </t-button>
                 </t-tooltip>
+                <t-tooltip v-if="row.status === 'CONFIRMED' && checkPermi(['erp:print:render'])" content="打印" placement="top">
+                  <t-button theme="primary" variant="text" shape="square" size="small" @click="printDialogRef?.open('payment', row.id, row.no)">
+                    <template #icon><PrintIcon /></template>
+                  </t-button>
+                </t-tooltip>
                 <t-tooltip v-if="row.status === 'DRAFT' && checkPermi(['erp:finance:payment:remove'])" content="删除" placement="top">
                   <t-button theme="danger" variant="text" shape="square" size="small" @click="handleDelete(row)">
                     <template #icon><DeleteIcon /></template>
@@ -96,6 +101,8 @@
         </div>
       </t-col>
     </t-row>
+
+    <FinancePrintDialog ref="printDialogRef" />
 
     <!-- 新增 / 编辑 / 查看 付款单 -->
     <t-dialog v-model:visible="dialog.visible" :header="dialog.title" width="92%" top="3vh" attach="body">
@@ -119,8 +126,9 @@
             </t-form-item>
           </t-col>
           <t-col :span="3">
-            <t-form-item label="账户" name="accountId">
-              <t-select v-model="form.accountId" filterable placeholder="请选择账户" style="width: 100%" :options="accountSelectOptions" />
+            <!-- 结算账户：新建必填（后端 saveHead 同口径）；存量单只有账户文本时不标必填 -->
+            <t-form-item label="结算账户" name="accountId" :required-mark="!form.id">
+              <t-select v-model="form.accountId" filterable placeholder="请选择结算账户" style="width: 100%" :options="accountSelectOptions" />
             </t-form-item>
           </t-col>
         </t-row>
@@ -192,7 +200,7 @@
           <div class="flex items-center gap-2">
             <t-button theme="default" variant="outline" @click="dialog.visible = false">{{ readonly ? '关 闭' : '取 消' }}</t-button>
             <t-button v-if="!readonly" theme="primary" variant="outline" @click="submitForm(false)">保存草稿</t-button>
-            <t-button v-if="!readonly" theme="success" :disabled="!balanced" @click="submitForm(true)">保存并确认</t-button>
+            <t-button v-if="!readonly && checkPermi(['erp:finance:payment:confirm'])" theme="success" :disabled="!balanced" @click="submitForm(true)">保存并确认</t-button>
           </div>
         </div>
       </template>
@@ -221,7 +229,8 @@ import { checkPermi } from '@/utils/permission';
 import { mergeSavedWidths, saveColumnWidths } from '@/hooks/useTableColumnWidth';
 import PartnerSelect from '@/components/erp/PartnerSelect.vue';
 import StatusTag from '@/components/erp/StatusTag.vue';
-import { BrowseIcon, CheckCircleIcon, CloseCircleIcon, DeleteIcon, Edit1Icon, PlusIcon, RollbackIcon } from 'tdesign-icons-vue-next';
+import FinancePrintDialog from '@/components/erp/FinancePrintDialog.vue';
+import { BrowseIcon, CheckCircleIcon, CloseCircleIcon, DeleteIcon, Edit1Icon, PlusIcon, PrintIcon, RollbackIcon } from 'tdesign-icons-vue-next';
 
 interface AllocRow {
   arApId: ErpId;
@@ -253,6 +262,7 @@ interface PaymentQueryState extends PageQuery {
 }
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const printDialogRef = ref<InstanceType<typeof FinancePrintDialog>>();
 
 const statusOptions = Object.entries(ERP_BILL_STATUS).map(([value, item]) => ({ value: value as ErpBillStatus, label: item.label }));
 
@@ -262,7 +272,7 @@ const listColumns: any[] = [
   { colKey: 'supplierName', title: '供应商', align: 'center', minWidth: 160, ellipsis: true },
   { colKey: 'amount', title: '付款金额', align: 'right', width: 140, cell: 'amount' },
   { colKey: 'bizDate', title: '业务日期', align: 'center', width: 120, cell: 'bizDate' },
-  { colKey: 'account', title: '账户', align: 'center', minWidth: 120, ellipsis: true },
+  { colKey: 'account', title: '结算账户', align: 'center', minWidth: 120, ellipsis: true },
   { colKey: 'status', title: '状态', align: 'center', width: 100, cell: 'status' },
   { colKey: 'remark', title: '备注', align: 'center', minWidth: 140, ellipsis: true },
   { colKey: 'operation', title: '操作', align: 'center', width: 160, cell: 'operation' }
@@ -528,6 +538,11 @@ const submitForm = async (confirm: boolean) => {
   }
   if (!(form.amount > 0)) {
     proxy?.$modal.msgWarning('付款金额必须大于 0');
+    return;
+  }
+  // 结算账户：新建必填；存量单沿用 account 文本（与后端 saveHead 口径一致）
+  if (!form.accountId && !form.accountText) {
+    proxy?.$modal.msgWarning('请选择结算账户');
     return;
   }
   if (!balanced.value) {

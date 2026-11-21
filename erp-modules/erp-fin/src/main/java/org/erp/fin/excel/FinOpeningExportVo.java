@@ -33,6 +33,11 @@ public class FinOpeningExportVo {
     @ExcelProperty("期初金额")
     private BigDecimal amount;
 
+    @ExcelRequired
+    @ExcelNotation("格式 yyyy-MM-dd；该日期之前不能有已确认的业务单据")
+    @ExcelProperty("期初截止日")
+    private String openingDate;
+
     @ExcelNotation("可选，最多 500 字")
     @ExcelProperty("备注")
     private String remark;

@@ -1,6 +1,7 @@
 package org.erp.fin.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.annotation.SaMode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.dromara.common.core.domain.R;
@@ -73,9 +74,14 @@ public class FinAccountController extends BaseController {
     }
 
     /**
-     * 启用账户下拉：收付款/其他收支页面复用，权限放宽到收付单列表权限。
+     * 启用账户下拉：收付款/其他收支页面复用，放宽到收款、付款、其他收支或账户列表任一权限。
      */
-    @SaCheckPermission("erp:finance:receipt:list")
+    @SaCheckPermission(value = {
+        "erp:finance:receipt:list",
+        "erp:finance:payment:list",
+        "erp:finance:other-flow:list",
+        "erp:finance:account:list"
+    }, mode = SaMode.OR)
     @GetMapping("/options")
     public R<List<FinAccountVo>> options() {
         return R.ok(accountService.options());

@@ -26,6 +26,9 @@ public class ErpSupplierVo {
 
     private String address;
 
+    /**
+     * 期初应付：仅为兼容档案字段保留，界面改读台账 OPENING 汇总（fin_ar_ap），不再作为录入入口。
+     */
     private BigDecimal openingPayable;
 
     private String taxNo;

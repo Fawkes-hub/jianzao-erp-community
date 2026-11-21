@@ -43,6 +43,7 @@
           <t-tag theme="primary" size="small">{{ sceneLabel(row.scene) }}</t-tag>
         </template>
         <template #customerName="{ row }">{{ row.customerName || '通用' }}</template>
+        <template #paper="{ row }">{{ paperLabel(row.paper) }}</template>
         <template #isDefault="{ row }">
           <t-tag v-if="row.isDefault === 1" theme="success" size="small">默认</t-tag>
           <span v-else class="erp-text-secondary">-</span>
@@ -108,8 +109,8 @@
             </t-form-item>
           </t-col>
           <t-col :span="4">
-            <t-form-item label="纸张">
-              <t-select v-model="form.paper" placeholder="A4" :options="paperOptions" />
+            <t-form-item label="纸张" name="paper" :help="paperLocked ? '当前模板已在 HTML 内声明 @page，此处的纸张选择不生效' : ''">
+              <t-select v-model="form.paper" placeholder="A4" :options="paperOptions" :disabled="paperLocked" />
             </t-form-item>
           </t-col>
           <t-col :span="4">
@@ -127,6 +128,13 @@
         <t-form-item label="模板内容" name="content">
           <t-textarea v-model="form.content" :autosize="{ minRows: 16, maxRows: 16 }" placeholder="HTML 模板，支持 Thymeleaf 表达式" />
         </t-form-item>
+        <!-- 纸张与驱动一致才不会缩放：针式打印机装 241 宽连续纸时选对应「三联单」，@page 与驱动纸宽一致，浏览器按 1:1 输出 -->
+        <t-alert
+          theme="info"
+          :close="false"
+          class="mb-2"
+          title="纸张会以 @page 写入打印页：打印时请在系统打印对话框选择相同纸张、缩放保持 100%。针式打印机装 241 宽连续纸请选「三联单 241x93」或「三联单 241x140」，并在驱动里建同名自定义纸张。模板内容若已自带 @page 声明，则忽略此处选择，按模板声明输出。"
+        />
       </t-form>
 
       <template #footer>
@@ -140,7 +148,7 @@
       <t-tabs v-model="previewTab">
         <t-tab-panel label="预览效果" value="preview">
           <t-empty v-if="!previewHtml" description="暂无预览内容" :image-style="{ fontSize: '100px' }" />
-          <iframe v-else class="preview-frame" :srcdoc="previewHtml" sandbox="allow-same-origin" title="模板预览"></iframe>
+          <iframe v-else class="preview-frame" :srcdoc="previewHtml" sandbox="allow-same-origin allow-modals" title="模板预览"></iframe>
         </t-tab-panel>
         <t-tab-panel label="变量说明" value="vars">
           <t-table
@@ -194,6 +202,7 @@ const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const sceneOptions: { label: string; value: ErpPrintScene }[] = [
   { label: '送货单', value: 'SALE_DELIVERY' },
   { label: '对账单', value: 'STATEMENT' },
+  { label: '对账单（区间）', value: 'STATEMENT_RANGE' },
   { label: '采购入库单', value: 'PURCHASE_IN' },
   { label: '收款单', value: 'RECEIPT' },
   { label: '付款单', value: 'PAYMENT' }
@@ -202,6 +211,7 @@ const sceneOptions: { label: string; value: ErpPrintScene }[] = [
 const paperOptions = [
   { label: 'A4', value: 'A4' },
   { label: 'A5', value: 'A5' },
+  { label: '三联单 241x93', value: '241x93' },
   { label: '三联单 241x140', value: '241x140' }
 ];
 
@@ -211,7 +221,7 @@ const variableRows = [
   { name: 'partner', desc: '往来单位（客户/供应商名称、联系方式）', example: '<span th:text="${partner.name}">客户</span>，另有 partner.contact / phone / address' },
   { name: 'items', desc: '明细行集合（名称、规格、单位、数量、单价、金额）', example: '<tr th:each="i : ${items}"><td th:text="${i.name}"></td><td th:text="${i.qty}"></td></tr>，行字段 name/spec/unit/qty/price/amount' },
   { name: 'totals', desc: '合计信息（数量合计、金额合计）', example: '合计 <span th:text="${totals.amountTotal}">0.00</span>；大写 <span th:text="${totals.amountUpper}">零元整</span>' },
-  { name: 'statement', desc: '对账数据（期初、本期销售、本期收款、期末）', example: '<span th:text="${statement.opening}"></span> / salesAmount / receiptAmount / closing；明细 ${statement.items} 循环，行字段 date/no/productName/qty/price/amount/settled/unsettled' },
+  { name: 'statement', desc: '对账数据（月度用 month；区间用 periodStart/periodEnd/periodLabel，区间模式 month 为空）', example: '<span th:text="${statement.periodLabel}"></span> / month / periodStart / periodEnd / opening / previousReceivable / totalReceivable / salesAmount / receiptAmount / monthlyUnpaid / cumulativeSales / cumulativeReceipts / cumulativeUnpaid / closing；明细 ${statement.items} 循环，行字段 date/no/productName/qtyText/price/amount/settled/unsettled' },
   { name: 'profit', desc: '成本与利润（成本金额、毛利、毛利率）', example: '<span th:text="${profit.costAmount}"></span> / profit.grossProfit / profit.grossMargin' },
   { name: 'showProfit', desc: '是否显示成本利润（true 时渲染内部利润区）', example: '<div th:if="${showProfit}">…</div>' },
   { name: 'signatures', desc: '签章区（制单人、仓管、客户签收）', example: '<span th:text="${signatures.maker}"></span>，另有 signatures.warehouse / customer' }
@@ -225,7 +235,7 @@ const listColumns: any[] = [
   { colKey: 'name', title: '模板名称', align: 'center', minWidth: 140 },
   { colKey: 'scene', title: '适用场景', align: 'center', width: 120, cell: 'scene' },
   { colKey: 'customerName', title: '专属客户', align: 'center', width: 120, cell: 'customerName' },
-  { colKey: 'paper', title: '纸张', align: 'center', width: 90 },
+  { colKey: 'paper', title: '纸张', align: 'center', width: 110, cell: 'paper' },
   { colKey: 'version', title: '版本', align: 'center', width: 70 },
   { colKey: 'isDefault', title: '默认', align: 'center', width: 70, cell: 'isDefault' },
   { colKey: 'status', title: '状态', align: 'center', width: 80, cell: 'status' },
@@ -295,6 +305,15 @@ const emptyForm = (): PrintTemplateForm => ({
 });
 
 const form = reactive<PrintTemplateForm>(emptyForm());
+
+/**
+ * 模板内容自带 @page 时纸张下拉不生效：与后端 PageSetup.PAGE_RULE 同规则（只认 @page 后紧跟
+ * 可选伪类/页名再加花括号），注释里出现「@page」字样不算，避免误锁下拉。
+ */
+const paperLocked = computed(() => /@page\s*(?::[a-z-]+\s*)?(?:[a-z_-][\w-]*\s*)?\{/i.test(form.content || ''));
+
+/** 纸张显示名：列表把存储值（如 241x93）还原为下拉中的可读标签 */
+const paperLabel = (paper?: string) => paperOptions.find((item) => item.value === paper)?.label ?? paper ?? '-';
 
 const codeSeed = ref('');
 
@@ -410,7 +429,8 @@ const handlePreview = async (row: PrintTemplateVO) => {
   const res = (await previewPrintTemplate({
     scene: detail.scene,
     content: detail.content,
-    customerId: detail.customerId
+    customerId: detail.customerId,
+    paper: detail.paper ?? 'A4'
   })) as unknown as string;
   const html = res ?? '';
   // 模板渲染异常时全局异常处理器返回 R JSON（text 透传），提示错误而不是塞进 iframe

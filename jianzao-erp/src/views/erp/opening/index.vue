@@ -297,6 +297,15 @@
         <t-form-item label="期初金额" name="amount">
           <t-input-number v-model="finForm.amount" :decimal-places="2" :min="0" theme="normal" align="right" style="width: 100%" />
         </t-form-item>
+        <t-form-item label="截止日" name="openingDate">
+          <t-date-picker
+            v-model="finForm.openingDate"
+            value-type="YYYY-MM-DD"
+            placeholder="期初余额截至哪一天"
+            :disable-date="(d: any) => new Date(d).getTime() > Date.now()"
+            style="width: 100%"
+          />
+        </t-form-item>
         <t-form-item label="备注" name="remark">
           <t-textarea v-model="finForm.remark" :autosize="{ minRows: 2 }" placeholder="请输入备注" />
         </t-form-item>
@@ -372,6 +381,7 @@ const finColumns: any[] = [
   { colKey: 'partyType', title: '往来类型', align: 'center', width: 100, cell: 'partyType' },
   { colKey: 'partyName', title: '往来单位', align: 'center', minWidth: 180, ellipsis: true },
   { colKey: 'amount', title: '期初金额', align: 'right', width: 140, cell: 'amount' },
+  { colKey: 'openingDate', title: '截止日', align: 'center', width: 120 },
   { colKey: 'status', title: '状态', align: 'center', width: 90, cell: 'status' },
   { colKey: 'remark', title: '备注', align: 'center', minWidth: 160, ellipsis: true },
   { colKey: 'operation', title: '操作', align: 'center', width: 170, cell: 'operation' }
@@ -449,8 +459,18 @@ interface FinFormState {
   partyType: ErpPartyType;
   partyId?: ErpId;
   amount: number;
+  /** 期初截止日 yyyy-MM-dd：期初金额表示该日期之前的账面余额 */
+  openingDate: string;
   remark: string;
 }
+
+/** 上月末 yyyy-MM-dd：期初最常用的截止日，作为新增时的默认值，可改 */
+const lastMonthEnd = (): string => {
+  const d = new Date();
+  d.setDate(1);
+  d.setDate(0);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
 
 const createFinForm = (): FinFormState => ({
   originPartyType: undefined,
@@ -458,6 +478,7 @@ const createFinForm = (): FinFormState => ({
   partyType: 'AR',
   partyId: undefined,
   amount: 0,
+  openingDate: lastMonthEnd(),
   remark: ''
 });
 
@@ -466,7 +487,8 @@ const finForm = reactive<FinFormState>(createFinForm());
 const finRules: Record<string, any> = {
   partyType: [{ required: true, message: '往来类型不能为空', trigger: 'change' }],
   partyId: [{ required: true, message: '往来单位不能为空', trigger: 'change' }],
-  amount: [{ required: true, message: '期初金额不能为空', trigger: 'blur' }]
+  amount: [{ required: true, message: '期初金额不能为空', trigger: 'blur' }],
+  openingDate: [{ required: true, message: '期初截止日不能为空', trigger: 'change' }]
 };
 
 /** 往来类型或单位变更将产生新记录 */
@@ -684,6 +706,7 @@ const handleFinEdit = async (row: FinOpeningVO) => {
     partyType: row.partyType,
     partyId: row.partyId,
     amount: num(row.amount),
+    openingDate: row.openingDate || lastMonthEnd(),
     remark: row.remark || ''
   });
   finFormRef.value?.clearValidate();
@@ -704,18 +727,23 @@ const submitFin = async () => {
       return;
     }
   }
+  let saved: FinOpeningVO | undefined;
   try {
-    await saveFinOpening({
+    const res = await saveFinOpening({
       partyType: finForm.partyType,
-      partyId: finForm.partyId,
+      partyId: finForm.partyId!,
       amount: num(finForm.amount),
+      openingDate: finForm.openingDate,
       remark: finForm.remark
     });
+    saved = res.data;
   } catch {
     showBizError('保存失败：期初已确认锁定，请先反确认');
     return;
   }
-  proxy?.$modal.msgSuccess('已保存');
+  // 同一往来单位只有一条期初：仅在新记录撞到已有草稿时提示覆盖，编辑原记录不提示
+  const writesNewRecord = finForm.originPartyId === undefined || finIdentityChanged.value;
+  proxy?.$modal.msgSuccess(writesNewRecord && saved?.overwritten ? '已保存，并覆盖了该单位原有期初' : '已保存');
   finDialog.visible = false;
   await getFinList();
 };
@@ -724,7 +752,7 @@ const submitFin = async () => {
 const handleFinConfirm = async (row: FinOpeningVO) => {
   try {
     await proxy?.$modal.confirm(
-      `是否确认「${partyTypeLabel(row.partyType)} - ${row.partyName ?? ''}」的期初金额 ${formatMoney(row.amount)}？确认后写入应收应付台账并锁定。`
+      `是否确认「${partyTypeLabel(row.partyType)} - ${row.partyName ?? ''}」截至 ${row.openingDate ?? '—'} 的期初金额 ${formatMoney(row.amount)}？确认后写入应收应付台账并锁定。`
     );
   } catch {
     return;

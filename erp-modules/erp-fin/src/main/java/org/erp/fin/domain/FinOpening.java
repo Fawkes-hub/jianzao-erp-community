@@ -7,6 +7,7 @@ import lombok.EqualsAndHashCode;
 import org.dromara.common.tenant.core.TenantEntity;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /**
  * 期初往来 fin_opening
@@ -26,6 +27,12 @@ public class FinOpening extends TenantEntity {
     private Long partyId;
 
     private BigDecimal amount;
+
+    /**
+     * 期初截止日（含当日）：期初金额表示该日期之前的账面余额，
+     * 确认时作为 fin_ar_ap.biz_date 落库，决定期初在哪个账期可见。
+     */
+    private LocalDate openingDate;
 
     private String status;
 

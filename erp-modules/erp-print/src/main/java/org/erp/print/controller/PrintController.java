@@ -101,8 +101,9 @@ public class PrintController extends BaseController {
     public String preview(@RequestParam String scene,
                           @RequestBody String content,
                           @RequestParam(required = false) Long customerId,
-                          @RequestParam(defaultValue = "false") boolean showProfit) {
-        return printService.preview(scene, content, customerId, showProfit);
+                          @RequestParam(defaultValue = "false") boolean showProfit,
+                          @RequestParam(required = false) String paper) {
+        return printService.preview(scene, content, customerId, showProfit, paper);
     }
 
     /**
@@ -118,14 +119,16 @@ public class PrintController extends BaseController {
     }
 
     /**
-     * 对账单渲染
+     * 对账单渲染：month 为月度账期；startDate + endDate 为自定义闭区间（同时给出时优先）
      */
     @SaCheckPermission("erp:print:render")
     @GetMapping(value = "/STATEMENT", produces = MediaType.TEXT_HTML_VALUE)
     public String statement(@RequestParam Long customerId,
                             @RequestParam(required = false) String month,
+                            @RequestParam(required = false) String startDate,
+                            @RequestParam(required = false) String endDate,
                             @RequestParam(required = false) Long templateId) {
-        return printService.renderStatement(customerId, month, templateId);
+        return printService.renderStatement(customerId, month, startDate, endDate, templateId);
     }
 
     /**

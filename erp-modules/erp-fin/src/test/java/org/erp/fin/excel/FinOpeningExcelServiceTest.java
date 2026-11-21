@@ -72,8 +72,8 @@ class FinOpeningExcelServiceTest {
     @Test
     void importRows_success_mapsPartyTypeAndCounts() {
         ImportResult result = service.importRows(rows(
-            row("应收", "C001", "2000.00", "期初应收"),
-            row("应付", "S001", "800.50", null)));
+            row("应收", "C001", "2000.00", "2026-09-30", "期初应收"),
+            row("应付", "S001", "800.50", "2026-09-30", null)));
 
         assertEquals(2, result.getTotal());
         assertEquals(2, result.getSuccess());
@@ -92,7 +92,7 @@ class FinOpeningExcelServiceTest {
     void importRows_unknownCustomerCode_failsWithoutSaving() {
         when(customerMapper.selectOne(any(Wrapper.class))).thenReturn(null);
 
-        ImportResult result = service.importRows(rows(row("应收", "UNKNOWN", "1", null)));
+        ImportResult result = service.importRows(rows(row("应收", "UNKNOWN", "1", "2026-09-30", null)));
 
         assertEquals(1, result.getFailed());
         assertTrue(result.getErrors().get(0).message().contains("客户编码不存在"));
@@ -103,7 +103,7 @@ class FinOpeningExcelServiceTest {
     void importRows_unknownSupplierCode_failsWithoutSaving() {
         when(supplierMapper.selectOne(any(Wrapper.class))).thenReturn(null);
 
-        ImportResult result = service.importRows(rows(row("应付", "UNKNOWN", "1", null)));
+        ImportResult result = service.importRows(rows(row("应付", "UNKNOWN", "1", "2026-09-30", null)));
 
         assertEquals(1, result.getFailed());
         assertTrue(result.getErrors().get(0).message().contains("供应商编码不存在"));
@@ -112,7 +112,7 @@ class FinOpeningExcelServiceTest {
 
     @Test
     void importRows_invalidPartyType_rejected() {
-        ImportResult result = service.importRows(rows(row("其他", "C001", "1", null)));
+        ImportResult result = service.importRows(rows(row("其他", "C001", "1", "2026-09-30", null)));
 
         assertEquals(1, result.getFailed());
         assertTrue(result.getErrors().get(0).message().contains("往来类型取值无效"));
@@ -122,8 +122,8 @@ class FinOpeningExcelServiceTest {
     @Test
     void importRows_negativeOrTooManyDecimalsAmount_rejected() {
         ImportResult result = service.importRows(rows(
-            row("应收", "C001", "-1", null),
-            row("应收", "C001", "1.234", null)));
+            row("应收", "C001", "-1", "2026-09-30", null),
+            row("应收", "C001", "1.234", "2026-09-30", null)));
 
         assertEquals(2, result.getFailed());
         assertTrue(result.getErrors().get(0).message().contains("期初金额不能为负"));
@@ -137,8 +137,8 @@ class FinOpeningExcelServiceTest {
             .thenThrow(new ServiceException("期初已确认锁定，请先反确认", 40902));
 
         ImportResult result = service.importRows(rows(
-            row("应收", "C001", "100", null),
-            row("应付", "S001", "200", null)));
+            row("应收", "C001", "100", "2026-09-30", null),
+            row("应付", "S001", "200", "2026-09-30", null)));
 
         assertEquals(2, result.getTotal());
         assertEquals(0, result.getSuccess());
@@ -149,11 +149,36 @@ class FinOpeningExcelServiceTest {
     }
 
     @Test
+    void importRows_missingOrInvalidOpeningDate_rejected() {
+        ImportResult result = service.importRows(rows(
+            row("应收", "C001", "1", null, null),
+            row("应收", "C001", "1", "2026/13/01", null)));
+
+        assertEquals(2, result.getFailed());
+        assertTrue(result.getErrors().get(0).message().contains("期初截止日不能为空"));
+        assertTrue(result.getErrors().get(1).message().contains("期初截止日格式必须是 yyyy-MM-dd"));
+        verify(openingService, never()).save(any(FinOpeningBo.class));
+    }
+
+    @Test
+    void importRows_duplicateParty_rejectedToAvoidSilentOverwrite() {
+        // 同一单位只能有一条期初，导入两行会被 upsert 静默覆盖，必须整批拒绝
+        ImportResult result = service.importRows(rows(
+            row("应收", "C001", "100", "2026-09-30", null),
+            row("应收", "C001", "200", "2026-09-30", null)));
+
+        assertEquals(1, result.getFailed());
+        assertTrue(result.getErrors().get(0).message().contains("往来单位重复"));
+        verify(openingService, never()).save(any(FinOpeningBo.class));
+    }
+
+    @Test
     void toExportRows_mapsPartyTypeAndCode() {
         FinOpeningVo ar = new FinOpeningVo();
         ar.setPartyType("AR");
         ar.setPartyId(9L);
         ar.setAmount(new BigDecimal("2000.00"));
+        ar.setOpeningDate(java.time.LocalDate.of(2026, 9, 30));
         ar.setRemark("期初应收");
 
         FinOpeningVo ap = new FinOpeningVo();
@@ -176,17 +201,19 @@ class FinOpeningExcelServiceTest {
         assertEquals(2, exportRows.size());
         assertEquals("应收", exportRows.get(0).getPartyType());
         assertEquals("C001", exportRows.get(0).getPartyCode());
+        assertEquals("2026-09-30", exportRows.get(0).getOpeningDate());
         assertEquals("应付", exportRows.get(1).getPartyType());
         assertEquals("S001", exportRows.get(1).getPartyCode());
     }
 
     // ---------- 辅助 ----------
 
-    private FinOpeningImportRow row(String partyType, String partyCode, String amount, String remark) {
+    private FinOpeningImportRow row(String partyType, String partyCode, String amount, String openingDate, String remark) {
         FinOpeningImportRow row = new FinOpeningImportRow();
         row.setPartyType(partyType);
         row.setPartyCode(partyCode);
         row.setAmount(amount);
+        row.setOpeningDate(openingDate);
         row.setRemark(remark);
         return row;
     }

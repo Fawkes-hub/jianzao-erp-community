@@ -77,7 +77,7 @@
             @select-change="handleSelectionChange"
             @column-resize-change="(ctx: any) => saveColumnWidths('master-customer/list', ctx.columnsWidth)"
           >
-            <template #openingDebt="{ row }">{{ formatMoney(row.openingDebt) }}</template>
+            <template #openingDebt="{ row }">{{ row.openingDebt === undefined || row.openingDebt === null ? '-' : formatMoney(row.openingDebt) }}</template>
             <template #taxRate="{ row }">{{ formatPercent(row.taxRate) }}</template>
             <template #status="{ row }">
               <t-tag :theme="row.status === 1 ? 'success' : 'default'" size="small">{{ row.status === 1 ? '启用' : '停用' }}</t-tag>
@@ -193,8 +193,8 @@
                 </t-form-item>
               </t-col>
               <t-col :span="6">
-                <t-form-item label="期初欠款" name="openingDebt">
-                  <t-input-number v-model="form.openingDebt" :decimal-places="2" theme="normal" align="right" style="width: 100%" />
+                <t-form-item label="期初欠款" help="以财务→期初往来确认的期初为准，此处不可编辑">
+                  <t-input :value="formatMoney(openingDebtDisplay)" disabled />
                 </t-form-item>
               </t-col>
               <t-col :span="6">
@@ -239,6 +239,7 @@
 import { listCustomer, getCustomer, addCustomer, updateCustomer, delCustomer } from '@/api/erp/master';
 import type { ErpImportResult } from '@/api/erp/master';
 import type { ErpCustomerForm, ErpCustomerVO } from '@/api/erp/types';
+import { arApSummary } from '@/api/erp/finance';
 import { formatMoney, formatPercent } from '@/utils/erp/calc';
 import { checkPermi } from '@/utils/permission';
 import { globalHeaders } from '@/utils/request';
@@ -254,6 +255,8 @@ interface CustomerQuery extends PageQuery {
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const customerList = ref<ErpCustomerVO[]>([]);
+/** 期初欠款只读展示值：来自台账 OPENING 汇总，不随表单提交 */
+const openingDebtDisplay = ref(0);
 const loading = ref(true);
 const showSearch = ref(true);
 const ids = ref<Array<string | number>>([]);
@@ -297,7 +300,6 @@ const initFormData: ErpCustomerForm = {
   contact: '',
   phone: '',
   address: '',
-  openingDebt: 0,
   taxNo: '',
   taxRate: 0,
   status: 1,
@@ -364,7 +366,29 @@ const getList = async () => {
   loading.value = true;
   try {
     const res = await listCustomer(queryParams.value);
-    customerList.value = res.rows ?? [];
+    const rows: ErpCustomerVO[] = res.rows ?? [];
+    // 期初欠款只认台账 OPENING 汇总，不再读客户档案字段，避免两处期初不一致。
+    // summary 需要 erp:finance:list，缺权角色直接按未加载展示，避免每次刷新弹 403。
+    if (!checkPermi(['erp:finance:list'])) {
+      rows.forEach((row) => {
+        row.openingDebt = undefined;
+      });
+    } else {
+      try {
+        const summary = await arApSummary('AR');
+        const openings = new Map<string, number>(
+          (summary.data?.parties ?? []).map((p) => [String(p.partyId), Number(p.opening ?? 0)] as [string, number])
+        );
+        rows.forEach((row) => {
+          row.openingDebt = openings.get(String(row.id));
+        });
+      } catch {
+        rows.forEach((row) => {
+          row.openingDebt = undefined;
+        });
+      }
+    }
+    customerList.value = rows;
     total.value = res.total ?? 0;
     // 受控选中：换数据后清空勾选，保持 EP 的 el-table「重取即丢选中」行为
     ids.value = [];
@@ -396,6 +420,7 @@ const handleSelectionChange = (keys: Array<string | number>) => {
 /** 表单重置：t-form 的 reset() 默认 resetType='empty'，会把数值/单选清成 undefined，这里以 initFormData 为准，只清校验态 */
 const reset = () => {
   form.value = { ...initFormData };
+  openingDebtDisplay.value = 0;
   customerFormRef.value?.clearValidate();
 };
 
@@ -413,7 +438,9 @@ const handleUpdate = async (row?: ErpCustomerVO) => {
   const res = await getCustomer(id);
   const detail = res.data;
   Object.assign(form.value, detail);
-  form.value.openingDebt = Number(detail.openingDebt ?? 0);
+  // 期初欠款取列表里已按台账汇总后的值，不读档案字段
+  const listed = customerList.value.find((row) => String(row.id) === String(id));
+  openingDebtDisplay.value = Number(listed?.openingDebt ?? 0);
   form.value.taxRate = Number(detail.taxRate ?? 0);
   form.value.status = detail.status ?? 1;
   dialog.visible = true;

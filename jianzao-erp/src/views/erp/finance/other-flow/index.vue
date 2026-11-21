@@ -124,13 +124,14 @@
         <t-form-item label="业务日期" name="bizDate">
           <t-date-picker v-model="form.bizDate" value-type="YYYY-MM-DD" placeholder="请选择日期" style="width: 100%" />
         </t-form-item>
-        <t-form-item label="账户" name="accountId">
-          <t-input v-if="readonly && !form.accountId" :model-value="form.accountText" placeholder="存量单无账户引用" disabled />
+        <!-- 结算账户：新建必填（后端 saveHead 同口径）；存量单只有账户文本时不标必填 -->
+        <t-form-item label="结算账户" name="accountId" :required-mark="!form.id">
+          <t-input v-if="readonly && !form.accountId" :model-value="form.accountText" placeholder="存量单无结算账户引用" disabled />
           <t-select
             v-else
             v-model="form.accountId"
             filterable
-            placeholder="请选择账户"
+            placeholder="请选择结算账户"
             :disabled="readonly"
             style="width: 100%"
             :options="accountSelectOptions"
@@ -151,7 +152,7 @@
           <div class="flex items-center gap-2">
             <t-button theme="default" variant="outline" @click="dialog.visible = false">{{ readonly ? '关 闭' : '取 消' }}</t-button>
             <t-button v-if="!readonly" theme="primary" variant="outline" @click="submitForm(false)">保存草稿</t-button>
-            <t-button v-if="!readonly" theme="success" @click="submitForm(true)">保存并确认</t-button>
+            <t-button v-if="!readonly && checkPermi(['erp:finance:other-flow:confirm'])" theme="success" @click="submitForm(true)">保存并确认</t-button>
           </div>
         </div>
       </template>
@@ -241,7 +242,7 @@ const listColumns: any[] = [
   { colKey: 'category', title: '分类', align: 'center', minWidth: 130, ellipsis: true },
   { colKey: 'amount', title: '金额', align: 'right', width: 140, cell: 'amount' },
   { colKey: 'bizDate', title: '业务日期', align: 'center', width: 120, cell: 'bizDate' },
-  { colKey: 'account', title: '账户', align: 'center', minWidth: 120, ellipsis: true },
+  { colKey: 'account', title: '结算账户', align: 'center', minWidth: 120, ellipsis: true },
   { colKey: 'affectCost', title: '计入成本', align: 'center', width: 100, cell: 'affectCost' },
   { colKey: 'status', title: '状态', align: 'center', width: 100, cell: 'status' },
   { colKey: 'remark', title: '备注', align: 'center', minWidth: 140, ellipsis: true },
@@ -399,6 +400,11 @@ const submitForm = async (confirm: boolean) => {
   if (!ok) return;
   if (!(form.amount > 0)) {
     proxy?.$modal.msgWarning('金额必须大于 0');
+    return;
+  }
+  // 结算账户：新建必填；存量单沿用 account 文本（与后端 saveHead 口径一致）
+  if (!form.accountId && !form.accountText) {
+    proxy?.$modal.msgWarning('请选择结算账户');
     return;
   }
   const payload = buildPayload(confirm);

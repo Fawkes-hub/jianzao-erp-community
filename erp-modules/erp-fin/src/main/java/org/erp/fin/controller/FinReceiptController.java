@@ -10,6 +10,7 @@ import org.dromara.common.log.enums.BusinessType;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.common.web.core.BaseController;
+import org.erp.common.security.ConfirmPermission;
 import org.erp.fin.domain.bo.FinReceiptBo;
 import org.erp.fin.domain.vo.FinReceiptVo;
 import org.erp.fin.service.IFinReceiptService;
@@ -46,6 +47,8 @@ public class FinReceiptController extends BaseController {
     @RepeatSubmit
     @PostMapping
     public R<FinReceiptVo> add(@Valid @RequestBody FinReceiptBo bo) {
+        // confirm=true 会在同一事务内直接核销往来，必须同时具备确认权限，避免仅新增权限绕过审核
+        ConfirmPermission.check("erp:finance:receipt:confirm", bo.getConfirm());
         return R.ok(receiptService.insert(bo));
     }
 
@@ -54,6 +57,7 @@ public class FinReceiptController extends BaseController {
     @RepeatSubmit
     @PutMapping("/{id}")
     public R<FinReceiptVo> edit(@PathVariable Long id, @Valid @RequestBody FinReceiptBo bo) {
+        ConfirmPermission.check("erp:finance:receipt:confirm", bo.getConfirm());
         return R.ok(receiptService.update(id, bo));
     }
 

@@ -58,5 +58,15 @@ public class FinReceiptVo {
         private Long arApId;
 
         private BigDecimal amount;
+
+        /**
+         * 台账来源类型（SALE/PURCHASE/OPENING/...），只读详情用于兜底文案
+         */
+        private String sourceType;
+
+        /**
+         * 台账来源业务单号；期初等无单号来源为 null
+         */
+        private String sourceNo;
     }
 }

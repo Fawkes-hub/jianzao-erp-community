@@ -110,6 +110,13 @@
         </t-form>
       </div>
 
+      <div class="login-commercial">
+        <a href="https://jianzaoai360.cn" target="_blank" rel="noopener noreferrer">
+          {{ proxy.$t('login.commercial') }} →
+        </a>
+        <span>{{ proxy.$t('login.commercialHint') }}</span>
+      </div>
+
       <footer class="login-foot">
         <span class="copyright">{{ proxy.$t('login.copyright') }}</span>
         <lang-select class="lang" />
@@ -656,6 +663,25 @@ onMounted(() => {
   gap: 12px;
   color: var(--ink-3);
   font-size: 12px;
+}
+
+.login-commercial {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin-bottom: 10px;
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.login-commercial a {
+  color: var(--td-brand-color);
+  text-decoration: none;
+}
+
+.login-commercial a:hover {
+  text-decoration: underline;
 }
 
 .login-foot .lang :deep(.lang-select--style) {

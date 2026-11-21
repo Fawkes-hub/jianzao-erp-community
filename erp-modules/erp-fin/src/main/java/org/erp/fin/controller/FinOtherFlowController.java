@@ -10,6 +10,7 @@ import org.dromara.common.log.enums.BusinessType;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.common.web.core.BaseController;
+import org.erp.common.security.ConfirmPermission;
 import org.erp.fin.domain.bo.FinOtherFlowBo;
 import org.erp.fin.domain.vo.FinOtherFlowVo;
 import org.erp.fin.service.IFinOtherFlowService;
@@ -47,6 +48,8 @@ public class FinOtherFlowController extends BaseController {
     @RepeatSubmit
     @PostMapping
     public R<FinOtherFlowVo> add(@Valid @RequestBody FinOtherFlowBo bo) {
+        // confirm=true 会在同一事务内直接记账并写成本台账，必须同时具备确认权限
+        ConfirmPermission.check("erp:finance:other-flow:confirm", bo.getConfirm());
         return R.ok(flowService.insert(bo));
     }
 
@@ -55,6 +58,7 @@ public class FinOtherFlowController extends BaseController {
     @RepeatSubmit
     @PutMapping("/{id}")
     public R<FinOtherFlowVo> edit(@PathVariable Long id, @Valid @RequestBody FinOtherFlowBo bo) {
+        ConfirmPermission.check("erp:finance:other-flow:confirm", bo.getConfirm());
         return R.ok(flowService.update(id, bo));
     }
 

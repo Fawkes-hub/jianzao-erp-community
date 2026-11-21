@@ -2,6 +2,8 @@ package org.erp.print.service.impl;
 
 import org.erp.fin.mapper.FinArApMapper;
 import org.erp.fin.mapper.FinReceiptMapper;
+import org.erp.fin.domain.FinArAp;
+import org.erp.fin.domain.FinReceipt;
 import org.erp.master.domain.ErpCustomer;
 import org.erp.master.domain.ErpProduct;
 import org.erp.master.mapper.ErpCustomerMapper;
@@ -70,6 +72,127 @@ class PrintStatementQtyScaleTest {
         assertTrue(html.contains(">2.50<"), "两位精度商品应显示 2.50");
         assertTrue(html.contains(">1.234<"), "商品已删除时应回落三位保真");
         assertFalse(html.contains("1.000"), "整数精度商品不应显示 1.000");
+    }
+
+    @Test
+    @DisplayName("所选月的累计金额包含历史及期初，不包含下月")
+    void rendersMonthlyAndCumulativeAmounts() {
+        IPrintTemplateService templates = mock(IPrintTemplateService.class);
+        ErpSaleMapper sales = mock(ErpSaleMapper.class);
+        ErpSaleItemMapper items = mock(ErpSaleItemMapper.class);
+        FinArApMapper ledger = mock(FinArApMapper.class);
+        FinReceiptMapper receipts = mock(FinReceiptMapper.class);
+        ErpCustomerMapper customers = mock(ErpCustomerMapper.class);
+        ErpSale sale = new ErpSale();
+        sale.setId(1L); sale.setNo("S1"); sale.setBizDate(new Date()); sale.setTotalAmount(new BigDecimal("200"));
+        FinArAp opening = new FinArAp(); opening.setSourceType("OPENING"); opening.setAmount(new BigDecimal("50"));
+        FinArAp oldSale = new FinArAp(); oldSale.setSourceType("SALE"); oldSale.setAmount(new BigDecimal("100"));
+        FinArAp oldReturn = new FinArAp(); oldReturn.setSourceType("SALE_RETURN"); oldReturn.setAmount(new BigDecimal("-10"));
+        FinArAp currentSale = new FinArAp(); currentSale.setSourceType("SALE"); currentSale.setAmount(new BigDecimal("200"));
+        FinArAp currentReturn = new FinArAp(); currentReturn.setSourceType("SALE_RETURN"); currentReturn.setAmount(new BigDecimal("-20")); currentReturn.setBizDate(new Date());
+        FinReceipt oldReceipt = new FinReceipt(); oldReceipt.setAmount(new BigDecimal("30"));
+        FinReceipt currentReceipt = new FinReceipt(); currentReceipt.setAmount(new BigDecimal("40")); currentReceipt.setBizDate(new Date()); currentReceipt.setNo("R1");
+        Date october = java.sql.Date.valueOf("2026-10-10");
+        opening.setBizDate(october); oldSale.setBizDate(october); oldReturn.setBizDate(october);
+        currentSale.setBizDate(october); currentReturn.setBizDate(october); oldReceipt.setBizDate(october); currentReceipt.setBizDate(october);
+        when(ledger.selectList(any())).thenReturn(List.of(opening, oldSale, oldReturn), List.of(currentReturn), List.of(opening, oldSale, oldReturn, currentSale, currentReturn));
+        when(receipts.selectList(any())).thenReturn(List.of(oldReceipt), List.of(currentReceipt), List.of(oldReceipt, currentReceipt));
+        when(sales.selectList(any())).thenReturn(List.of(sale));
+        when(items.selectList(any())).thenReturn(List.of());
+        when(customers.selectById(9L)).thenReturn(new ErpCustomer());
+        PrintServiceImpl service = new PrintServiceImpl(templates, sales, receipts, null, null, null, ledger, null, customers, null, null, items, null);
+
+        String html = service.renderStatement(9L, "2026-10", null);
+        assertTrue(html.contains("当月销售金额：<span>180.00</span>"));
+        assertTrue(html.contains("当月收款金额：<span>40.00</span>"));
+        assertTrue(html.contains("当月未付金额：<span>140.00</span>"));
+        assertTrue(html.contains("累计销售金额：<span>270.00</span>"));
+        assertTrue(html.contains("累计收款金额：<span>70.00</span>"));
+        assertTrue(html.contains("累计未付金额：<b>250.00</b>"));
+    }
+
+    @Test
+    @DisplayName("对账单红字收款退款正确冲减净收款并计入期末")
+    void rendersNegativeReceiptRefundCorrectly() {
+        IPrintTemplateService templateService = mock(IPrintTemplateService.class);
+        ErpSaleMapper saleMapper = mock(ErpSaleMapper.class);
+        ErpSaleItemMapper saleItemMapper = mock(ErpSaleItemMapper.class);
+        FinArApMapper arApMapper = mock(FinArApMapper.class);
+        FinReceiptMapper receiptMapper = mock(FinReceiptMapper.class);
+        ErpCustomerMapper customerMapper = mock(ErpCustomerMapper.class);
+        ErpProductMapper productMapper = mock(ErpProductMapper.class);
+
+        ErpSale sale = new ErpSale();
+        sale.setId(1L);
+        sale.setCustomerId(9L);
+        sale.setNo("XS202611070001");
+        sale.setBizDate(new Date());
+        sale.setStatus("CONFIRMED");
+        sale.setTotalAmount(new BigDecimal("1000.00"));
+        when(saleMapper.selectList(any())).thenReturn(List.of(sale));
+        when(saleItemMapper.selectList(any())).thenReturn(List.of(saleItem(1L, new BigDecimal("10"))));
+        when(productMapper.selectById(1L)).thenReturn(product("测试成品", 0));
+        when(arApMapper.selectList(any())).thenReturn(List.of());
+
+        // 正常收款 800，红字退款 200（negative=1）
+        FinReceipt normalReceipt = new FinReceipt();
+        normalReceipt.setId(101L);
+        normalReceipt.setCustomerId(9L);
+        normalReceipt.setNo("SK202611070001");
+        normalReceipt.setBizDate(new Date());
+        normalReceipt.setStatus("CONFIRMED");
+        normalReceipt.setNegative(0);
+        normalReceipt.setAmount(new BigDecimal("800.00"));
+
+        FinReceipt refundReceipt = new FinReceipt();
+        refundReceipt.setId(102L);
+        refundReceipt.setCustomerId(9L);
+        refundReceipt.setNo("SK202611070002");
+        refundReceipt.setBizDate(new Date());
+        refundReceipt.setStatus("CONFIRMED");
+        refundReceipt.setNegative(1);
+        refundReceipt.setAmount(new BigDecimal("200.00"));
+
+        when(receiptMapper.selectList(any())).thenReturn(List.of(normalReceipt, refundReceipt));
+        when(customerMapper.selectById(9L)).thenReturn(new ErpCustomer());
+        when(templateService.resolve(any(), any(), any())).thenReturn((PrintTemplate) null);
+
+        PrintServiceImpl service = new PrintServiceImpl(templateService, saleMapper, receiptMapper, null, null, null,
+            arApMapper, null, customerMapper, null, productMapper, saleItemMapper, null);
+        String html = service.renderStatement(9L, "2026-11", null);
+
+        // 销售 1000，收款 800，退款 200 => 净收款 600，期末应收 400
+        assertTrue(html.contains("600.00"), "本期净收款应为 800 - 200 = 600.00");
+        assertTrue(html.contains("400.00"), "期末应收应为 1000 - 600 = 400.00");
+        assertTrue(html.contains("退款"), "明细中应展示退款摘要");
+    }
+
+    @Test
+    @DisplayName("期初截止日落在账期当月时，期初与期末应收包含期初金额")
+    void openingDateInsideMonth_countedInOpeningAndClosing() {
+        IPrintTemplateService templates = mock(IPrintTemplateService.class);
+        ErpSaleMapper sales = mock(ErpSaleMapper.class);
+        ErpSaleItemMapper items = mock(ErpSaleItemMapper.class);
+        FinArApMapper ledger = mock(FinArApMapper.class);
+        FinReceiptMapper receipts = mock(FinReceiptMapper.class);
+        ErpCustomerMapper customers = mock(ErpCustomerMapper.class);
+
+        // 期初截止日 2026-09-30，查 2026-09 账期：该笔期初必须进「期初应收/期末应收」
+        FinArAp opening = new FinArAp();
+        opening.setSourceType("OPENING");
+        opening.setAmount(new BigDecimal("65004.00"));
+        opening.setBizDate(java.sql.Date.valueOf("2026-09-30"));
+        when(ledger.selectList(any())).thenReturn(List.of(opening), List.of(), List.of(opening));
+        when(receipts.selectList(any())).thenReturn(List.of(), List.of(), List.of());
+        when(sales.selectList(any())).thenReturn(List.of());
+        when(items.selectList(any())).thenReturn(List.of());
+        when(customers.selectById(9L)).thenReturn(new ErpCustomer());
+
+        PrintServiceImpl service = new PrintServiceImpl(templates, sales, receipts, null, null, null, ledger, null, customers, null, null, items, null);
+        String html = service.renderStatement(9L, "2026-09", null);
+
+        assertTrue(html.contains("期初应收：<span>65004.00</span>"), "期初所属月的上期结余应为期初金额");
+        assertTrue(html.contains("期末应收：<b>65004.00</b>"), "期初所属月的期末应收应等于期初金额");
     }
 
     private static ErpSaleItem saleItem(Long productId, BigDecimal qty) {

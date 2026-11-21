@@ -28,8 +28,6 @@ public class ErpCustomerBo {
 
     private String address;
 
-    private BigDecimal openingDebt;
-
     private String taxNo;
 
     private BigDecimal taxRate;

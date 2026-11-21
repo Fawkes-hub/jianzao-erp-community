@@ -44,6 +44,8 @@ export function previewPrintTemplate(params: {
   content: string;
   customerId?: string | number;
   showProfit?: boolean;
+  /** 模板纸张：A4/A5/宽x高(mm)/AUTO，后端按此注入 @page */
+  paper?: string;
 }): AxiosPromise<string> {
   return request({
     url: '/erp/print/preview',
@@ -51,7 +53,8 @@ export function previewPrintTemplate(params: {
     params: {
       scene: params.scene,
       customerId: params.customerId,
-      showProfit: params.showProfit ?? false
+      showProfit: params.showProfit ?? false,
+      paper: params.paper
     },
     data: params.content,
     headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
@@ -83,8 +86,14 @@ export function renderSaleDelivery(
   return renderPrint(`/erp/print/SALE_DELIVERY/${saleId}`, params);
 }
 
-/** 对账单渲染 */
-export function renderStatement(params: { customerId: string | number; month?: string; templateId?: string | number }): AxiosPromise<string> {
+/** 对账单渲染；month 为月度账期，startDate/endDate 为自定义闭区间（同时给出时优先） */
+export function renderStatement(params: {
+  customerId: string | number;
+  month?: string;
+  startDate?: string;
+  endDate?: string;
+  templateId?: string | number;
+}): AxiosPromise<string> {
   return renderPrint('/erp/print/STATEMENT', params);
 }
 
