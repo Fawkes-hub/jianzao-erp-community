@@ -31,10 +31,12 @@ export const initSSE = (url: any) => {
       read: false,
       time: new Date().toLocaleString()
     });
+    // duration 缩短至 2s，并显式开启关闭按钮，避免登录欢迎消息长时间占用右上角
     NotifyPlugin.success({
       title: '消息',
       content: data.value,
-      duration: 3000
+      duration: 2000,
+      closeBtn: true
     });
     data.value = null;
   });

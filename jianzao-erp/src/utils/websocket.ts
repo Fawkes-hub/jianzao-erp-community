@@ -40,10 +40,12 @@ export const initWebSocket = (url: any) => {
         read: false,
         time: new Date().toLocaleString()
       });
+      // 显式开启关闭按钮，业务消息可手动关闭，避免停留期间遮挡右上角操作
       NotifyPlugin.success({
         title: '消息',
         content: e.data,
-        duration: 3000
+        duration: 3000,
+        closeBtn: true
       });
     }
   });
