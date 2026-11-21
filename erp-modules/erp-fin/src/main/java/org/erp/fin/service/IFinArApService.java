@@ -3,9 +3,11 @@ package org.erp.fin.service;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.erp.fin.domain.vo.FinArApSummaryVo;
+import org.erp.fin.domain.vo.FinArApSourceVo;
 import org.erp.fin.domain.vo.FinArApVo;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
@@ -84,6 +86,16 @@ public interface IFinArApService {
      * 校验：台账存在、反核销额 ≤ 已核销额。
      */
     void unsettle(Long arApId, BigDecimal amount);
+
+    /**
+     * 按台账行 id 批量取来源信息（类型 + 业务单号）。
+     *
+     * 用于收付款单详情的核销明细回显：台账 id 是内部主键，用户认的是业务单号。
+     *
+     * @param arApIds 台账行 id 集合
+     * @return 来源信息列表；入参为空时返回空列表
+     */
+    List<FinArApSourceVo> listSourceInfo(Collection<Long> arApIds);
 
     /**
      * 统计期初截止日之前已确认的业务单据数：AR 为销售/销售退货/收款，AP 为采购/采购退货/付款。

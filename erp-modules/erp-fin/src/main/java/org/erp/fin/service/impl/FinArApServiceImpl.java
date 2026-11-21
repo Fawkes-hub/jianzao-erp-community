@@ -12,6 +12,7 @@ import org.erp.fin.domain.FinPayment;
 import org.erp.fin.domain.FinReceipt;
 import org.erp.fin.domain.FinSourceNo;
 import org.erp.fin.domain.vo.FinArApSummaryVo;
+import org.erp.fin.domain.vo.FinArApSourceVo;
 import org.erp.fin.domain.vo.FinArApVo;
 import org.erp.fin.mapper.FinArApMapper;
 import org.erp.fin.mapper.FinPaymentMapper;
@@ -422,5 +423,32 @@ public class FinArApServiceImpl implements IFinArApService {
                 .eq(FinPayment::getStatus, "CONFIRMED")
                 .lt(FinPayment::getBizDate, before));
         return (ledger == null ? 0L : ledger) + (settled == null ? 0L : settled);
+    }
+
+    /**
+     * 按台账行 id 批量取来源信息（类型 + 业务单号）。
+     *
+     * 收付款单详情的核销明细只存 ar_ap_id，直接回显是内部主键；
+     * 这里复用列表口径的单号回查，把 result 交给收付款单服务填充 sourceNo。
+     *
+     * @param arApIds 台账行 id 集合
+     * @return 来源信息列表（不存在的 id 自动忽略）
+     */
+    @Override
+    public List<FinArApSourceVo> listSourceInfo(Collection<Long> arApIds) {
+        if (arApIds == null || arApIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        List<FinArAp> rows = arApMapper.selectBatchIds(arApIds);
+        Map<Long, String> nos = loadSourceNos(rows);
+        List<FinArApSourceVo> result = new ArrayList<>();
+        for (FinArAp row : rows) {
+            FinArApSourceVo vo = new FinArApSourceVo();
+            vo.setArApId(row.getId());
+            vo.setSourceType(row.getSourceType());
+            vo.setSourceNo(row.getSourceId() == null ? null : nos.get(row.getSourceId()));
+            result.add(vo);
+        }
+        return result;
     }
 }

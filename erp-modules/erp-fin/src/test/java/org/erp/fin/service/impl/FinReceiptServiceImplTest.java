@@ -6,6 +6,8 @@ import org.erp.common.sequence.SequenceService;
 import org.erp.fin.domain.FinReceipt;
 import org.erp.fin.domain.FinReceiptAlloc;
 import org.erp.fin.domain.bo.FinReceiptBo;
+import org.erp.fin.domain.vo.FinArApSourceVo;
+import org.erp.fin.domain.vo.FinReceiptVo;
 import org.erp.fin.mapper.FinReceiptAllocMapper;
 import org.erp.fin.mapper.FinReceiptMapper;
 import org.erp.fin.service.IFinArApService;
@@ -82,6 +84,8 @@ class FinReceiptServiceImplTest {
         when(allocMapper.insert(any(FinReceiptAlloc.class))).thenReturn(1);
         when(sequenceService.nextNo("SK")).thenReturn("SK202610310001");
         when(customerMapper.selectById(any())).thenReturn(customer());
+        // 核销明细回填来源单号（selectById 走 loadAllocs）时批量查台账来源
+        when(arApService.listSourceInfo(any())).thenReturn(List.of());
     }
 
     // ---------- 确认核销 ----------
@@ -209,6 +213,23 @@ class FinReceiptServiceImplTest {
 
         ServiceException ex = assertThrows(ServiceException.class, () -> service.voidBill(100L));
         assertTrue(ex.getMessage().contains("已作废"));
+    }
+
+    @Test
+    void selectById_allocationsCarrySourceNo() {
+        when(receiptMapper.selectById(100L)).thenReturn(receiptHead("CONFIRMED", "1000.00"));
+        when(allocMapper.selectList(any(Wrapper.class))).thenReturn(List.of(allocRow(1L, 5001L, "1000.00")));
+        FinArApSourceVo source = new FinArApSourceVo();
+        source.setArApId(5001L);
+        source.setSourceType("SALE");
+        source.setSourceNo("XS202611010001");
+        when(arApService.listSourceInfo(any())).thenReturn(List.of(source));
+
+        FinReceiptVo vo = service.selectById(100L);
+
+        // 详情核销明细必须带业务单号，前端不再展示内部台账 id
+        assertEquals("XS202611010001", vo.getAllocations().get(0).getSourceNo());
+        assertEquals("SALE", vo.getAllocations().get(0).getSourceType());
     }
 
     @Test

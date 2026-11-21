@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import org.dromara.common.core.exception.ServiceException;
 import org.erp.fin.domain.FinArAp;
 import org.erp.fin.domain.FinSourceNo;
+import org.erp.fin.domain.vo.FinArApSourceVo;
 import org.erp.fin.mapper.FinArApMapper;
 import org.erp.fin.mapper.FinPaymentMapper;
 import org.erp.fin.mapper.FinReceiptMapper;
@@ -340,6 +341,32 @@ class FinArApServiceImplTest {
         assertEquals(3L, count);
         verify(paymentMapper).selectCount(any(Wrapper.class));
         verify(receiptMapper, never()).selectCount(any(Wrapper.class));
+    }
+
+    // ---------- 核销明细来源单号 ----------
+
+    @Test
+    void listSourceInfo_mapsBusinessNo_andOpeningHasNoNo() {
+        when(arApMapper.selectBatchIds(any())).thenReturn(List.of(
+            arRow(1L, "AR", 9L, "SALE", 500L, "100.00", "0.00", "OPEN"),
+            arRow(2L, "AP", 8L, "PURCHASE", 600L, "200.00", "0.00", "OPEN"),
+            arRow(3L, "AR", 9L, "OPENING", 700L, "300.00", "0.00", "OPEN")));
+        when(sourceNoMapper.selectSaleNos(any())).thenReturn(List.of(sourceNo(500L, "XS202611010001")));
+        when(sourceNoMapper.selectPurchaseNos(any())).thenReturn(List.of(sourceNo(600L, "CG202611010001")));
+
+        List<FinArApSourceVo> result = service.listSourceInfo(List.of(1L, 2L, 3L));
+
+        assertEquals(3, result.size());
+        assertEquals("SALE", result.get(0).getSourceType());
+        assertEquals("XS202611010001", result.get(0).getSourceNo());
+        assertEquals("CG202611010001", result.get(1).getSourceNo());
+        // 期初没有业务单号：前端退回来源类型文案「期初」
+        assertNull(result.get(2).getSourceNo());
+    }
+
+    @Test
+    void listSourceInfo_emptyIds_returnsEmpty() {
+        assertTrue(service.listSourceInfo(List.of()).isEmpty());
     }
 
     // ---------- 辅助 ----------

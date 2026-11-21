@@ -13,6 +13,7 @@ import org.erp.fin.domain.FinArAp;
 import org.erp.fin.domain.FinPayment;
 import org.erp.fin.domain.FinPaymentAlloc;
 import org.erp.fin.domain.bo.FinPaymentBo;
+import org.erp.fin.domain.vo.FinArApSourceVo;
 import org.erp.fin.domain.vo.FinPaymentVo;
 import org.erp.fin.mapper.FinPaymentAllocMapper;
 import org.erp.fin.mapper.FinPaymentMapper;
@@ -27,7 +28,10 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * 付款单服务实现
@@ -91,12 +95,23 @@ public class FinPaymentServiceImpl implements IFinPaymentService {
         List<FinPaymentAlloc> rows = allocMapper.selectList(new LambdaQueryWrapper<FinPaymentAlloc>()
             .eq(FinPaymentAlloc::getPaymentId, paymentId)
             .orderByAsc(FinPaymentAlloc::getId));
+        // 台账 id 换业务单号：核销明细只存 ar_ap_id，直接回显用户无法识别；无单号时退回来源类型文案
+        Map<Long, FinArApSourceVo> sources = new HashMap<>();
+        List<Long> arApIds = rows.stream().map(FinPaymentAlloc::getArApId).filter(Objects::nonNull).distinct().toList();
+        if (!arApIds.isEmpty()) {
+            for (FinArApSourceVo item : arApService.listSourceInfo(arApIds)) {
+                sources.put(item.getArApId(), item);
+            }
+        }
         List<FinPaymentVo.AllocVo> result = new ArrayList<>();
         for (FinPaymentAlloc row : rows) {
             FinPaymentVo.AllocVo vo = new FinPaymentVo.AllocVo();
+            FinArApSourceVo source = sources.get(row.getArApId());
             vo.setId(row.getId());
             vo.setArApId(row.getArApId());
             vo.setAmount(row.getAmount());
+            vo.setSourceType(source == null ? null : source.getSourceType());
+            vo.setSourceNo(source == null ? null : source.getSourceNo());
             result.add(vo);
         }
         return result;
