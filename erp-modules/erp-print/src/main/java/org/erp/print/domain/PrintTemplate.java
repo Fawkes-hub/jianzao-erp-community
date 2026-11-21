@@ -10,7 +10,7 @@ import org.dromara.common.tenant.core.TenantEntity;
 /**
  * 打印模板 print_template
  *
- * scene: SALE_DELIVERY/STATEMENT/PURCHASE_IN/RECEIPT/PAYMENT；
+ * scene: SALE_DELIVERY/STATEMENT/STATEMENT_RANGE/PURCHASE_IN/RECEIPT/PAYMENT；
  * engine 固定 THYMELEAF；每次保存 version+1；停用不删除保留审计。
  */
 @Data

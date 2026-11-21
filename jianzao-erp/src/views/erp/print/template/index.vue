@@ -202,6 +202,7 @@ const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const sceneOptions: { label: string; value: ErpPrintScene }[] = [
   { label: '送货单', value: 'SALE_DELIVERY' },
   { label: '对账单', value: 'STATEMENT' },
+  { label: '对账单（区间）', value: 'STATEMENT_RANGE' },
   { label: '采购入库单', value: 'PURCHASE_IN' },
   { label: '收款单', value: 'RECEIPT' },
   { label: '付款单', value: 'PAYMENT' }
@@ -220,7 +221,7 @@ const variableRows = [
   { name: 'partner', desc: '往来单位（客户/供应商名称、联系方式）', example: '<span th:text="${partner.name}">客户</span>，另有 partner.contact / phone / address' },
   { name: 'items', desc: '明细行集合（名称、规格、单位、数量、单价、金额）', example: '<tr th:each="i : ${items}"><td th:text="${i.name}"></td><td th:text="${i.qty}"></td></tr>，行字段 name/spec/unit/qty/price/amount' },
   { name: 'totals', desc: '合计信息（数量合计、金额合计）', example: '合计 <span th:text="${totals.amountTotal}">0.00</span>；大写 <span th:text="${totals.amountUpper}">零元整</span>' },
-  { name: 'statement', desc: '对账数据（往月累计应收、本期销售、本期收款、累计应收、期末应收）', example: '<span th:text="${statement.opening}"></span> / salesAmount / receiptAmount / totalReceivable / closing；明细 ${statement.items} 循环，行字段 date/no/productName/qty/price/amount/settled/unsettled' },
+  { name: 'statement', desc: '对账数据（月度用 month；区间用 periodStart/periodEnd/periodLabel，区间模式 month 为空）', example: '<span th:text="${statement.periodLabel}"></span> / month / periodStart / periodEnd / opening / previousReceivable / totalReceivable / salesAmount / receiptAmount / monthlyUnpaid / cumulativeSales / cumulativeReceipts / cumulativeUnpaid / closing；明细 ${statement.items} 循环，行字段 date/no/productName/qtyText/price/amount/settled/unsettled' },
   { name: 'profit', desc: '成本与利润（成本金额、毛利、毛利率）', example: '<span th:text="${profit.costAmount}"></span> / profit.grossProfit / profit.grossMargin' },
   { name: 'showProfit', desc: '是否显示成本利润（true 时渲染内部利润区）', example: '<div th:if="${showProfit}">…</div>' },
   { name: 'signatures', desc: '签章区（制单人、仓管、客户签收）', example: '<span th:text="${signatures.maker}"></span>，另有 signatures.warehouse / customer' }

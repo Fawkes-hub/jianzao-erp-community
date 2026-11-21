@@ -107,6 +107,18 @@ public class PrintContext {
     @Data
     public static class Statement {
         private String month;
+        /**
+         * 对账期间开始日 yyyy-MM-dd（月度模式为该月 1 日）
+         */
+        private String periodStart;
+        /**
+         * 对账期间结束日 yyyy-MM-dd，含当日（月度模式为该月最后一天）
+         */
+        private String periodEnd;
+        /**
+         * 对账期间展示文案：月度 "yyyy-MM 月度"，区间 "yyyy-MM-dd 至 yyyy-MM-dd"
+         */
+        private String periodLabel;
         private BigDecimal opening;
         private BigDecimal previousReceivable;
         private BigDecimal totalReceivable;

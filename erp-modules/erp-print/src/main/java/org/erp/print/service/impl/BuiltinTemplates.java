@@ -5,7 +5,7 @@ import org.erp.print.domain.PrintTemplate;
 /**
  * 内置兜底模板（DOC/14 §2 解析顺序第 3 级：无可用模板时代码内置）
  *
- * 4 套：送货单 / 对账单 / 收款单 / 付款单（收付款共用一套，doc.type 切换标题）。
+ * 模板集：送货单 / 对账单（月度）/ 对账单（区间）/ 收款单 / 付款单（收付款共用一套，doc.type 切换标题）。
  */
 public final class BuiltinTemplates {
 
@@ -224,5 +224,86 @@ public final class BuiltinTemplates {
         t.setStatus(1);
         t.setContent(content);
         return t;
+    }
+
+    /**
+     * 内置对账单（自定义区间）：与月度模板同口径，仅把「当月/账期」文案改为「本期/对账期间」
+     *
+     * @return 场景为 STATEMENT_RANGE 的内置模板
+     */
+    public static PrintTemplate statementRange() {
+        return of("STATEMENT_RANGE", "内置对账单（区间）", "A4", """
+            <!DOCTYPE html>
+            <html lang="zh-CN">
+            <head>
+              <meta charset="UTF-8">
+              <style>
+                /* @page 由 PageSetup 按模板 paper 注入，此处不再硬编码纸张 */
+                body { font-family: "Microsoft YaHei", "PingFang SC", sans-serif; font-size: 12px; }
+                h1 { text-align: center; font-size: 20px; letter-spacing: 4px; margin: 0 0 4px; }
+                .sub { text-align: center; color: #666; margin-bottom: 14px; }
+                .meta { display: flex; justify-content: space-between; margin-bottom: 10px; }
+                table { width: 100%; border-collapse: collapse; }
+                th, td { border: 1px solid #333; padding: 5px 6px; }
+                th { background: #f0f0f0; }
+                .num { text-align: right; }
+                .summary { display: flex; justify-content: space-between; margin-top: 10px; line-height: 1.8; }
+                .sign { display: flex; justify-content: space-between; margin-top: 30px; }
+              </style>
+            </head>
+            <body>
+              <h1>对 账 单</h1>
+              <div class="sub">对账期间：<span th:text="${statement.periodLabel}">2026-09-01 至 2026-09-30</span></div>
+              <div class="meta">
+                <span>客户：<b th:text="${partner.name}">客户</b></span>
+                <span>制单日期：<span th:text="${printDate}">2026-10-31</span></span>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width:11%">日期</th>
+                    <th style="width:16%">单号</th>
+                    <th>商品名称</th>
+                    <th style="width:9%" class="num">数量</th>
+                    <th style="width:9%" class="num">单价</th>
+                    <th style="width:11%" class="num">金额</th>
+                    <th style="width:11%" class="num">已收</th>
+                    <th style="width:11%" class="num">未结</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr th:each="item : ${statement.items}">
+                    <td th:text="${#dates.format(item.date, 'yyyy-MM-dd')}">2026-09-05</td>
+                    <td th:text="${item.no}">XS202609050001</td>
+                    <td th:text="${item.productName} ?: '-'">料管</td>
+                    <td class="num" th:text="${item.qtyText != null} ? ${item.qtyText} : '-'">10</td>
+                    <td class="num" th:text="${item.price != null} ? ${#numbers.formatDecimal(item.price,1,2)} : '-'">0.00</td>
+                    <td class="num" th:text="${item.amount}">0.00</td>
+                    <td class="num" th:text="${item.settled}">0.00</td>
+                    <td class="num" th:text="${item.unsettled}">0.00</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="summary" style="display: flex; justify-content: space-between; margin-top: 10px; line-height: 1.8;">
+                <div>
+                  <div>期初应收：<span th:text="${statement.opening}">0.00</span></div>
+                  <div>本期销售金额：<span th:text="${statement.salesAmount}">0.00</span></div>
+                  <div>本期收款金额：<span th:text="${statement.receiptAmount}">0.00</span></div>
+                  <div>本期未付金额：<span th:text="${statement.monthlyUnpaid}">0.00</span></div>
+                </div>
+                <div>
+                  <div>累计销售金额：<span th:text="${statement.cumulativeSales}">0.00</span></div>
+                  <div>累计收款金额：<span th:text="${statement.cumulativeReceipts}">0.00</span></div>
+                  <div>累计未付金额：<b th:text="${statement.cumulativeUnpaid}">0.00</b> 元</div>
+                  <div>期末应收：<b th:text="${statement.closing}">0.00</b> 元</div>
+                </div>
+              </div>
+              <div class="sign">
+                <span>制单：<span th:text="${tenant.name}">成都鑫盛合科技</span></span>
+                <span>客户确认：______________</span>
+              </div>
+            </body>
+            </html>
+            """);
     }
 }

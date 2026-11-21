@@ -38,6 +38,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -59,6 +60,14 @@ public class PrintServiceImpl implements IPrintService {
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final String STATUS_VOID = "VOID";
     private static final int MAX_COPIES = 10;
+    /**
+     * 自定义对账区间上限（天）：防止误选多年打出数百页明细
+     */
+    private static final int MAX_RANGE_DAYS = 366;
+    /**
+     * 对账单明细行上限：区间放大后仍需兜住渲染/打印体积
+     */
+    private static final int MAX_STATEMENT_ROWS = 5000;
 
     private final IPrintTemplateService templateService;
     private final ErpSaleMapper saleMapper;
@@ -121,21 +130,64 @@ public class PrintServiceImpl implements IPrintService {
         return render(ctx, templateId, "SALE_DELIVERY", sale.getCustomerId());
     }
 
+    /**
+     * 月度对账单（兼容旧 3 参调用）：必须在实现类上保留事务注解，
+     * 接口 default 方法经 Spring 代理调用时不会触发事务拦截
+     */
     @Override
     @Transactional(readOnly = true)
     public String renderStatement(Long customerId, String month, Long templateId) {
-        if (month == null || month.isBlank()) {
-            month = LocalDate.now().format(MONTH_FMT);
+        return renderStatement(customerId, month, null, null, templateId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public String renderStatement(Long customerId, String month, String startDate, String endDate, Long templateId) {
+        // 区间模式：起止日同时给出；否则按月账期（month 为空取当前月）
+        boolean rangeMode = (startDate != null && !startDate.isBlank()) || (endDate != null && !endDate.isBlank());
+        LocalDate fromDate;
+        LocalDate toExclusiveDate;
+        String periodLabel;
+        if (rangeMode) {
+            if (startDate == null || startDate.isBlank() || endDate == null || endDate.isBlank()) {
+                throw new ServiceException("自定义对账区间需同时选择开始日期和结束日期");
+            }
+            try {
+                fromDate = LocalDate.parse(startDate);
+                toExclusiveDate = LocalDate.parse(endDate).plusDays(1);
+            } catch (Exception e) {
+                throw new ServiceException("对账日期格式必须是 yyyy-MM-dd");
+            }
+            // 结束日闭区间：toExclusive 为结束日次日，开始日不早于它即开始晚于结束
+            if (!fromDate.isBefore(toExclusiveDate)) {
+                throw new ServiceException("对账开始日期不能晚于结束日期");
+            }
+            // 含首尾的自然日跨度：toExclusive 与 fromDate 相差的天数即闭区间天数
+            if (ChronoUnit.DAYS.between(fromDate, toExclusiveDate) > MAX_RANGE_DAYS) {
+                throw new ServiceException("对账区间不能超过 " + MAX_RANGE_DAYS + " 天");
+            }
+            periodLabel = fromDate.format(DATE_FMT) + " 至 " + toExclusiveDate.minusDays(1).format(DATE_FMT);
+        } else {
+            if (month == null || month.isBlank()) {
+                month = LocalDate.now().format(MONTH_FMT);
+            }
+            try {
+                fromDate = LocalDate.parse(month + "-01");
+            } catch (Exception e) {
+                throw new ServiceException("账期格式必须是 yyyy-MM");
+            }
+            toExclusiveDate = fromDate.plusMonths(1);
+            periodLabel = month + " 月度";
         }
-        LocalDate first;
+        Date from;
+        Date to;
         try {
-            first = LocalDate.parse(month + "-01");
-        } catch (Exception e) {
-            throw new ServiceException("账期格式必须是 yyyy-MM");
+            from = Date.from(fromDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+            to = Date.from(toExclusiveDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        } catch (RuntimeException e) {
+            // 极端年份（如 +999999999）能通过 LocalDate.parse，但转 Date 会溢出
+            throw new ServiceException("对账日期超出支持范围");
         }
-        LocalDate next = first.plusMonths(1);
-        Date from = Date.from(first.atStartOfDay(ZoneId.systemDefault()).toInstant());
-        Date to = Date.from(next.atStartOfDay(ZoneId.systemDefault()).toInstant());
 
         // 历史台账含期初、销售及退货；收款按收款日期扣除，避免按当前核销状态回溯。
         // 截止日落在本账期内的期初也要计入上期结余：期初金额是「截至当日」的余额，
@@ -168,6 +220,8 @@ public class PrintServiceImpl implements IPrintService {
         // 本期销售（单据日期），已确认；按销售明细展开商品行
         BigDecimal salesAmount = BigDecimal.ZERO;
         List<PrintContext.StatementItem> statementItems = new ArrayList<>();
+        // 商品按 id 缓存：跨月区间会放大明细行数，避免同一商品逐行查库
+        Map<Long, ErpProduct> productCache = new HashMap<>();
         for (ErpSale sale : saleMapper.selectList(new LambdaQueryWrapper<ErpSale>()
                 .eq(ErpSale::getCustomerId, customerId)
                 .eq(ErpSale::getStatus, "CONFIRMED")
@@ -185,7 +239,8 @@ public class PrintServiceImpl implements IPrintService {
                 continue;
             }
             for (ErpSaleItem saleItem : saleItems) {
-                ErpProduct product = saleItem.getProductId() == null ? null : productMapper.selectById(saleItem.getProductId());
+                ErpProduct product = saleItem.getProductId() == null ? null
+                    : productCache.computeIfAbsent(saleItem.getProductId(), productMapper::selectById);
                 PrintContext.StatementItem si = statementItem(sale.getBizDate(), sale.getNo(),
                     "销售", product == null ? null : product.getName(), nvl(saleItem.getAmount()), saleItem.getQty());
                 si.setPrice(saleItem.getPrice());
@@ -229,6 +284,9 @@ public class PrintServiceImpl implements IPrintService {
                     "收款", null, amt.negate(), null));
             }
         }
+        if (statementItems.size() > MAX_STATEMENT_ROWS) {
+            throw new ServiceException("对账单明细超过 " + MAX_STATEMENT_ROWS + " 行，请缩小对账区间");
+        }
         statementItems.sort((a, b) -> {
             int c = a.getDate().compareTo(b.getDate());
             return c != 0 ? c : a.getNo().compareTo(b.getNo());
@@ -267,7 +325,10 @@ public class PrintServiceImpl implements IPrintService {
         fillPartner(ctx, "AR", customerId);
         ctx.getDoc().setType("STATEMENT");
         PrintContext.Statement statement = new PrintContext.Statement();
-        statement.setMonth(month);
+        statement.setMonth(rangeMode ? null : month);
+        statement.setPeriodStart(fromDate.format(DATE_FMT));
+        statement.setPeriodEnd(toExclusiveDate.minusDays(1).format(DATE_FMT));
+        statement.setPeriodLabel(periodLabel);
         statement.setPreviousReceivable(previousReceivable.setScale(2, RoundingMode.HALF_UP));
         statement.setOpening(statement.getPreviousReceivable());
         statement.setSalesAmount(salesAmount.setScale(2, RoundingMode.HALF_UP));
@@ -280,7 +341,7 @@ public class PrintServiceImpl implements IPrintService {
         statement.setTotalReceivable(totalReceivable.setScale(2, RoundingMode.HALF_UP));
         statement.setItems(statementItems);
         ctx.setStatement(statement);
-        return render(ctx, templateId, "STATEMENT", customerId);
+        return render(ctx, templateId, rangeMode ? "STATEMENT_RANGE" : "STATEMENT", customerId);
     }
 
     @Override
@@ -339,6 +400,9 @@ public class PrintServiceImpl implements IPrintService {
         PrintTemplate template = templateService.resolve(templateId, scene, customerId);
         if (template == null) {
             template = builtin(scene);
+        } else if (templateId != null && !scene.equals(template.getScene())) {
+            // 显式 templateId 也必须是当前场景模板，避免区间对账套用月度模板打出错误账期
+            throw new ServiceException("打印模板场景不匹配：当前场景为 " + scene);
         }
         ctx.setPrintDate(LocalDate.now().format(DATE_FMT));
         String rendered = ThymeleafRenderer.render(template.getContent(), toModel(ctx));
@@ -359,6 +423,7 @@ public class PrintServiceImpl implements IPrintService {
         return switch (scene) {
             case "SALE_DELIVERY" -> BuiltinTemplates.saleDelivery();
             case "STATEMENT" -> BuiltinTemplates.statement();
+            case "STATEMENT_RANGE" -> BuiltinTemplates.statementRange();
             case "RECEIPT", "PAYMENT" -> BuiltinTemplates.receiptPayment();
             default -> throw new ServiceException("该场景暂不支持打印：" + scene);
         };
@@ -392,7 +457,8 @@ public class PrintServiceImpl implements IPrintService {
         ctx.getDoc().setAccount("微信");
         ctx.getDoc().setRemark("示例备注");
         ctx.getDoc().setType("SALE_DELIVERY".equals(scene) ? "SALE_DELIVERY"
-            : "RECEIPT".equals(scene) ? "RECEIPT" : "PAYMENT".equals(scene) ? "PAYMENT" : scene);
+            : "RECEIPT".equals(scene) ? "RECEIPT" : "PAYMENT".equals(scene) ? "PAYMENT"
+            : "STATEMENT_RANGE".equals(scene) ? "STATEMENT" : scene);
         PrintContext.Item item = new PrintContext.Item();
         item.setIndex(1);
         item.setName("料管");
@@ -409,7 +475,19 @@ public class PrintServiceImpl implements IPrintService {
         // 预览示例数据无条件填充全部变量：模板场景与内容可能不一致（如送货单场景套用对账单模板），
         // 若按场景只给对应变量，模板引用未填充对象会抛 OGNL null 异常
         PrintContext.Statement statement = new PrintContext.Statement();
-        statement.setMonth(LocalDate.now().format(MONTH_FMT));
+        LocalDate today = LocalDate.now();
+        LocalDate monthFirst = today.withDayOfMonth(1);
+        statement.setMonth(today.format(MONTH_FMT));
+        statement.setPeriodStart(monthFirst.format(DATE_FMT));
+        if ("STATEMENT_RANGE".equals(scene)) {
+            // 区间模板示例：本月 1 日至今天
+            statement.setPeriodEnd(today.format(DATE_FMT));
+            statement.setPeriodLabel(monthFirst.format(DATE_FMT) + " 至 " + today.format(DATE_FMT));
+        } else {
+            // 月度模板示例：整月，与正式渲染的 month/periodLabel 口径一致
+            statement.setPeriodEnd(today.withDayOfMonth(today.lengthOfMonth()).format(DATE_FMT));
+            statement.setPeriodLabel(today.format(MONTH_FMT) + " 月度");
+        }
         statement.setOpening(new BigDecimal("2000.00"));
         statement.setPreviousReceivable(new BigDecimal("2000.00"));
         statement.setSalesAmount(new BigDecimal("500.00"));

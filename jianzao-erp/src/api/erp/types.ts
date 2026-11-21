@@ -1129,7 +1129,7 @@ export type ErpPartnerType = 'CUSTOMER' | 'SUPPLIER';
 /* ------------------------------ 打印模板 ------------------------------ */
 
 /** 打印场景 */
-export type ErpPrintScene = 'SALE_DELIVERY' | 'STATEMENT' | 'PURCHASE_IN' | 'RECEIPT' | 'PAYMENT';
+export type ErpPrintScene = 'SALE_DELIVERY' | 'STATEMENT' | 'STATEMENT_RANGE' | 'PURCHASE_IN' | 'RECEIPT' | 'PAYMENT';
 
 /** 打印模板 */
 

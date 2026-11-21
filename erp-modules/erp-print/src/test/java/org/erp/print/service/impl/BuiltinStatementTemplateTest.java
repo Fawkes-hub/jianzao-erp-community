@@ -84,4 +84,42 @@ class BuiltinStatementTemplateTest {
         // 收款行 price 为空，单价单元格回落显示 '-'
         assertTrue(html.contains(">-</td>"), "无单价的行应显示 -");
     }
+
+    @Test
+    @DisplayName("区间模板输出对账期间与本期口径")
+    void rendersRangePeriodLabels() {
+        PrintContext.Statement statement = new PrintContext.Statement();
+        statement.setPeriodStart("2026-09-01");
+        statement.setPeriodEnd("2026-10-31");
+        statement.setPeriodLabel("2026-09-01 至 2026-10-31");
+        statement.setOpening(new BigDecimal("110.00"));
+        statement.setPreviousReceivable(new BigDecimal("110.00"));
+        statement.setSalesAmount(new BigDecimal("480.00"));
+        statement.setReceiptAmount(new BigDecimal("40.00"));
+        statement.setMonthlyUnpaid(new BigDecimal("440.00"));
+        statement.setCumulativeSales(new BigDecimal("570.00"));
+        statement.setCumulativeReceipts(new BigDecimal("70.00"));
+        statement.setCumulativeUnpaid(new BigDecimal("550.00"));
+        statement.setClosing(new BigDecimal("550.00"));
+        statement.setTotalReceivable(new BigDecimal("550.00"));
+        statement.setItems(List.of());
+
+        PrintContext.Tenant tenant = new PrintContext.Tenant();
+        tenant.setName("成都鑫盛合科技");
+
+        Map<String, Object> model = Map.of(
+            "statement", statement,
+            "partner", Map.of("name", "成都冒火"),
+            "tenant", tenant,
+            "printDate", "2026-11-18");
+
+        String html = ThymeleafRenderer.render(BuiltinTemplates.statementRange().getContent(), model);
+
+        assertTrue(html.contains("对账期间：<span>2026-09-01 至 2026-10-31</span>"), "应输出对账期间");
+        assertTrue(html.contains("本期销售金额：<span>480.00</span>"));
+        assertTrue(html.contains("本期收款金额：<span>40.00</span>"));
+        assertTrue(html.contains("本期未付金额：<span>440.00</span>"));
+        assertTrue(html.contains("期末应收：<b>550.00</b> 元"));
+        assertFalse(html.contains("当月销售金额"), "区间模板不应出现月度口径文案");
+    }
 }
