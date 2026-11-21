@@ -119,7 +119,7 @@
           <t-select v-model="form.packageId" :disabled="!!form.tenantId" placeholder="请选择租户套餐" clearable :options="packageOptions" style="width: 100%" />
         </t-form-item>
         <t-form-item label="过期时间" name="expireTime">
-          <t-date-picker v-model="form.expireTime" clearable enable-time-picker value-type="YYYY-MM-DD HH:mm:ss" placeholder="请选择过期时间" style="width: 100%" />
+          <t-date-picker v-model="form.expireTime" clearable enable-time-picker value-type="YYYY-MM-DD HH:mm:ss" placeholder="请选择过期时间" style="width: 100%" @pick="handleExpireTimePick" />
         </t-form-item>
         <t-form-item label="用户数量" name="accountCount">
           <t-input v-model="form.accountCount" placeholder="请输入用户数量" />
@@ -337,6 +337,14 @@ const handleUpdate = async (row?: TenantVO) => {
   Object.assign(form.value, res.data);
   dialog.visible = true;
   dialog.title = '修改租户';
+};
+
+/**
+ * 日期面板选中后立即回写表单：面板需再点自身「确定」才提交，直接点弹窗「确定」会提交旧值
+ * @param value 日期选择器回传的日期对象
+ */
+const handleExpireTimePick = (value: Date | string | number) => {
+  form.value.expireTime = proxy?.parseTime(value) ?? '';
 };
 
 /** 提交按钮：t-form.validate() 失败 resolve(false)，判定 r===true||r===undefined（DOC/35 §5） */

@@ -7,6 +7,7 @@ import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.crypto.digest.BCrypt;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
@@ -283,7 +284,11 @@ public class SysTenantServiceImpl implements ISysTenantService {
         SysTenant tenant = MapstructUtils.convert(bo, SysTenant.class);
         tenant.setTenantId(null);
         tenant.setPackageId(null);
-        return baseMapper.updateById(tenant) > 0;
+        // 编辑表单始终提交过期时间，null 即清空；updateById 会跳过 null 字段，必须显式 set 才能落库置空
+        LambdaUpdateWrapper<SysTenant> luw = new LambdaUpdateWrapper<>();
+        luw.eq(SysTenant::getId, bo.getId());
+        luw.set(ObjectUtil.isNull(bo.getExpireTime()), SysTenant::getExpireTime, null);
+        return baseMapper.update(tenant, luw) > 0;
     }
 
     /**
