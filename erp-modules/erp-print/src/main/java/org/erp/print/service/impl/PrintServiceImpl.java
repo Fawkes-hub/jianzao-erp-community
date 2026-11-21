@@ -155,8 +155,11 @@ public class PrintServiceImpl implements IPrintService {
                 .eq(FinReceipt::getCustomerId, customerId)
                 .eq(FinReceipt::getStatus, "CONFIRMED")
                 .lt(FinReceipt::getBizDate, from))) {
-            previousReceivable = previousReceivable.subtract(nvl(receipt.getAmount()));
-            historicalReceipts = historicalReceipts.add(nvl(receipt.getAmount()));
+            // 红字收款为退款：回溯应收时加回，累计收款按净额冲减
+            boolean isNegative = Integer.valueOf(1).equals(receipt.getNegative());
+            BigDecimal amt = nvl(receipt.getAmount());
+            previousReceivable = isNegative ? previousReceivable.add(amt) : previousReceivable.subtract(amt);
+            historicalReceipts = isNegative ? historicalReceipts.subtract(amt) : historicalReceipts.add(amt);
         }
 
         // 本期销售（单据日期），已确认；按销售明细展开商品行
@@ -204,16 +207,24 @@ public class PrintServiceImpl implements IPrintService {
             statementItems.add(statementItem(row.getBizDate(), "销售退货", "销售退货", null, nvl(row.getAmount()), null));
         }
 
-        // 本期收款（收款日期，已确认）
+        // 本期收款（收款日期，已确认；红字单据为退款，冲减净收款并增加应收明细）
         BigDecimal receiptAmount = BigDecimal.ZERO;
         for (FinReceipt receipt : receiptMapper.selectList(new LambdaQueryWrapper<FinReceipt>()
                 .eq(FinReceipt::getCustomerId, customerId)
                 .eq(FinReceipt::getStatus, "CONFIRMED")
                 .ge(FinReceipt::getBizDate, from)
                 .lt(FinReceipt::getBizDate, to))) {
-            receiptAmount = receiptAmount.add(nvl(receipt.getAmount()));
-            statementItems.add(statementItem(receipt.getBizDate(), receipt.getNo(),
-                "收款", null, nvl(receipt.getAmount()).negate(), null));
+            boolean isNegative = Integer.valueOf(1).equals(receipt.getNegative());
+            BigDecimal amt = nvl(receipt.getAmount());
+            if (isNegative) {
+                receiptAmount = receiptAmount.subtract(amt);
+                statementItems.add(statementItem(receipt.getBizDate(), receipt.getNo(),
+                    "退款", null, amt, null));
+            } else {
+                receiptAmount = receiptAmount.add(amt);
+                statementItems.add(statementItem(receipt.getBizDate(), receipt.getNo(),
+                    "收款", null, amt.negate(), null));
+            }
         }
         statementItems.sort((a, b) -> {
             int c = a.getDate().compareTo(b.getDate());
@@ -236,8 +247,15 @@ public class PrintServiceImpl implements IPrintService {
                 .eq(FinReceipt::getCustomerId, customerId)
                 .eq(FinReceipt::getStatus, "CONFIRMED")
                 .lt(FinReceipt::getBizDate, to.after(tomorrow) ? to : tomorrow))) {
-            if (receipt.getBizDate().before(to)) cumulativeUnpaid = cumulativeUnpaid.subtract(nvl(receipt.getAmount()));
-            if (receipt.getBizDate().before(tomorrow)) totalReceivable = totalReceivable.subtract(nvl(receipt.getAmount()));
+            // 红字收款为退款，累计未付与累计应收需加回
+            boolean isNegative = Integer.valueOf(1).equals(receipt.getNegative());
+            BigDecimal amt = nvl(receipt.getAmount());
+            if (receipt.getBizDate().before(to)) {
+                cumulativeUnpaid = isNegative ? cumulativeUnpaid.add(amt) : cumulativeUnpaid.subtract(amt);
+            }
+            if (receipt.getBizDate().before(tomorrow)) {
+                totalReceivable = isNegative ? totalReceivable.add(amt) : totalReceivable.subtract(amt);
+            }
         }
 
         BigDecimal closing = previousReceivable.add(salesAmount).subtract(receiptAmount);
@@ -490,7 +508,8 @@ public class PrintServiceImpl implements IPrintService {
         si.setDate(date);
         si.setNo(no);
         si.setContent(content);
-        si.setProductName(productName);
+        // 收款/退款等无商品行回落内容，避免明细商品名为空
+        si.setProductName(productName != null ? productName : content);
         si.setQty(qty);
         si.setAmount(amount);
         si.setSettled(BigDecimal.ZERO);

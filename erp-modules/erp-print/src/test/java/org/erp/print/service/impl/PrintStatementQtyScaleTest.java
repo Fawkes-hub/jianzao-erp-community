@@ -111,6 +111,62 @@ class PrintStatementQtyScaleTest {
         assertTrue(html.contains("累计未付金额：<b>250.00</b>"));
     }
 
+    @Test
+    @DisplayName("对账单红字收款退款正确冲减净收款并计入期末")
+    void rendersNegativeReceiptRefundCorrectly() {
+        IPrintTemplateService templateService = mock(IPrintTemplateService.class);
+        ErpSaleMapper saleMapper = mock(ErpSaleMapper.class);
+        ErpSaleItemMapper saleItemMapper = mock(ErpSaleItemMapper.class);
+        FinArApMapper arApMapper = mock(FinArApMapper.class);
+        FinReceiptMapper receiptMapper = mock(FinReceiptMapper.class);
+        ErpCustomerMapper customerMapper = mock(ErpCustomerMapper.class);
+        ErpProductMapper productMapper = mock(ErpProductMapper.class);
+
+        ErpSale sale = new ErpSale();
+        sale.setId(1L);
+        sale.setCustomerId(9L);
+        sale.setNo("XS202611070001");
+        sale.setBizDate(new Date());
+        sale.setStatus("CONFIRMED");
+        sale.setTotalAmount(new BigDecimal("1000.00"));
+        when(saleMapper.selectList(any())).thenReturn(List.of(sale));
+        when(saleItemMapper.selectList(any())).thenReturn(List.of(saleItem(1L, new BigDecimal("10"))));
+        when(productMapper.selectById(1L)).thenReturn(product("测试成品", 0));
+        when(arApMapper.selectList(any())).thenReturn(List.of());
+
+        // 正常收款 800，红字退款 200（negative=1）
+        FinReceipt normalReceipt = new FinReceipt();
+        normalReceipt.setId(101L);
+        normalReceipt.setCustomerId(9L);
+        normalReceipt.setNo("SK202611070001");
+        normalReceipt.setBizDate(new Date());
+        normalReceipt.setStatus("CONFIRMED");
+        normalReceipt.setNegative(0);
+        normalReceipt.setAmount(new BigDecimal("800.00"));
+
+        FinReceipt refundReceipt = new FinReceipt();
+        refundReceipt.setId(102L);
+        refundReceipt.setCustomerId(9L);
+        refundReceipt.setNo("SK202611070002");
+        refundReceipt.setBizDate(new Date());
+        refundReceipt.setStatus("CONFIRMED");
+        refundReceipt.setNegative(1);
+        refundReceipt.setAmount(new BigDecimal("200.00"));
+
+        when(receiptMapper.selectList(any())).thenReturn(List.of(normalReceipt, refundReceipt));
+        when(customerMapper.selectById(9L)).thenReturn(new ErpCustomer());
+        when(templateService.resolve(any(), any(), any())).thenReturn((PrintTemplate) null);
+
+        PrintServiceImpl service = new PrintServiceImpl(templateService, saleMapper, receiptMapper, null, null, null,
+            arApMapper, null, customerMapper, null, productMapper, saleItemMapper, null);
+        String html = service.renderStatement(9L, "2026-11", null);
+
+        // 销售 1000，收款 800，退款 200 => 净收款 600，期末应收 400
+        assertTrue(html.contains("600.00"), "本期净收款应为 800 - 200 = 600.00");
+        assertTrue(html.contains("400.00"), "期末应收应为 1000 - 600 = 400.00");
+        assertTrue(html.contains("退款"), "明细中应展示退款摘要");
+    }
+
     private static ErpSaleItem saleItem(Long productId, BigDecimal qty) {
         ErpSaleItem item = new ErpSaleItem();
         item.setProductId(productId);
