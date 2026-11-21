@@ -10,6 +10,10 @@
         <p class="subhead">{{ proxy.$t('login.subhead') }}</p>
       </div>
       <p class="register-footer">{{ proxy.$t('login.copyright') }}</p>
+      <p class="register-footer register-commercial">
+        <a href="https://jianzaoai360.cn" target="_blank" rel="noopener noreferrer">{{ proxy.$t('login.commercial') }}</a>
+        <span>· {{ proxy.$t('login.commercialHint') }}</span>
+      </p>
     </section>
 
     <section class="register-panel">
@@ -295,6 +299,20 @@ onMounted(() => {
   padding-top: 32px;
   color: var(--ink-muted);
   font-size: 12px;
+}
+
+.register-commercial {
+  margin-top: 6px;
+  padding-top: 0;
+}
+
+.register-commercial a {
+  color: var(--td-brand-color);
+  text-decoration: none;
+}
+
+.register-commercial a:hover {
+  text-decoration: underline;
 }
 
 .register-panel {

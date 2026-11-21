@@ -22,6 +22,8 @@ export default {
     brandTag: 'Light manufacturing suite',
     headlinePrefix: 'Sign in to',
     copyright: 'Copyright © 2026 Jianzao ERP',
+    commercial: 'Commercial edition: production, subcontracting, stocktake and mini program',
+    commercialHint: 'Search "Jianzao AI Ordering" on WeChat',
     headline: 'Every purchase, sale and stock move, accounted for',
     subhead: 'Purchasing, sales, inventory and receivables in one document trail',
     rule: {
