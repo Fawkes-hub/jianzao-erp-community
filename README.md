@@ -78,7 +78,7 @@
 
 **微信扫码，直接打开「简造AI开单-进销存」小程序：**
 
-<img src="docs/images/miniapp-code.jpg" width="240" alt="简造AI开单-进销存小程序码" />
+<img src="docs/images/miniapp-code.png" width="240" alt="简造AI开单-进销存小程序码" />
 
 > 社区版不包含商业版功能，也不构成商业版的功能承诺；商业版功能与授权范围以 [COMMERCIAL.md](COMMERCIAL.md) 为准。
 

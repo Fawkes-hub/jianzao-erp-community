@@ -49,7 +49,7 @@
 - 官网：<https://jianzaoai360.cn>
 - 微信小程序：微信搜索「简造AI开单-进销存」，或扫码直接打开
 
-  <img src="docs/images/miniapp-code.jpg" width="220" alt="简造AI开单-进销存小程序码" />
+  <img src="docs/images/miniapp-code.png" width="220" alt="简造AI开单-进销存小程序码" />
 - 功能演示 / 试用 / 报价：通过官网联系，或在本仓库提交 issue，标题注明「商业授权」
 
 > 社区版与商业版共用同一套底座与数据模型；商业版功能不随社区版开源。
