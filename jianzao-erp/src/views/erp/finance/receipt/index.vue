@@ -126,8 +126,9 @@
             </t-form-item>
           </t-col>
           <t-col :span="3">
-            <t-form-item label="账户" name="accountId">
-              <t-select v-model="form.accountId" filterable placeholder="请选择账户" style="width: 100%" :options="accountSelectOptions" />
+            <!-- 结算账户：新建必填（后端 saveHead 同口径）；存量单只有账户文本时不标必填 -->
+            <t-form-item label="结算账户" name="accountId" :required-mark="!form.id">
+              <t-select v-model="form.accountId" filterable placeholder="请选择结算账户" style="width: 100%" :options="accountSelectOptions" />
             </t-form-item>
           </t-col>
         </t-row>
@@ -271,7 +272,7 @@ const listColumns: any[] = [
   { colKey: 'customerName', title: '客户', align: 'center', minWidth: 160, ellipsis: true },
   { colKey: 'amount', title: '收款金额', align: 'right', width: 140, cell: 'amount' },
   { colKey: 'bizDate', title: '业务日期', align: 'center', width: 120, cell: 'bizDate' },
-  { colKey: 'account', title: '账户', align: 'center', minWidth: 120, ellipsis: true },
+  { colKey: 'account', title: '结算账户', align: 'center', minWidth: 120, ellipsis: true },
   { colKey: 'status', title: '状态', align: 'center', width: 100, cell: 'status' },
   { colKey: 'remark', title: '备注', align: 'center', minWidth: 140, ellipsis: true },
   { colKey: 'operation', title: '操作', align: 'center', width: 160, cell: 'operation' }
@@ -538,6 +539,11 @@ const submitForm = async (confirm: boolean) => {
   }
   if (!(form.amount > 0)) {
     proxy?.$modal.msgWarning('收款金额必须大于 0');
+    return;
+  }
+  // 结算账户：新建必填；存量单沿用 account 文本（与后端 saveHead 口径一致）
+  if (!form.accountId && !form.accountText) {
+    proxy?.$modal.msgWarning('请选择结算账户');
     return;
   }
   if (!balanced.value) {
