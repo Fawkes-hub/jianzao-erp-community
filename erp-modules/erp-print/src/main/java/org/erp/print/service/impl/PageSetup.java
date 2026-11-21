@@ -1,6 +1,7 @@
 package org.erp.print.service.impl;
 
 import java.util.Locale;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -14,17 +15,21 @@ import java.util.regex.Pattern;
  *
  * paper 取值（打印模板 paper 字段）：
  *  A4 / A5：标准纸张，页边距沿用内置模板原值；
- *  宽x高（mm，如 241x140、380x280）：针式/自定义纸，241x140 按三联单走纸用小边距；
+ *  宽x高（mm，如 241x140、241x93、380x280）：针式/自定义纸，241 宽三联单按走纸用小边距；
  *  AUTO 或未知值：不注入，跟随模板自身 @page（兼容旧数据与手工模板）。
  */
 public final class PageSetup {
 
-    /** 针式三联单 241×140：连续纸两侧留出链轮走纸位，边距取小值 */
-    private static final String PAPER_PIN_FEED = "241x140";
+    /** 针式三联单 241 宽连续纸：241×140 与 241×93 同为链轮走纸，两侧留出走纸位，边距取小值 */
+    private static final Set<String> PIN_FEED_PAPERS = Set.of("241x140", "241x93");
 
     private static final Pattern CUSTOM_SIZE = Pattern.compile("^(\\d+(?:\\.\\d+)?)x(\\d+(?:\\.\\d+)?)$");
-    /** 模板是否自带 @page 规则（@page 后跟选择器/花括号；分号截断避免误匹配 @page-margin 等注释文字） */
-    private static final Pattern PAGE_RULE = Pattern.compile("@page\\s*[^;]*\\{", Pattern.CASE_INSENSITIVE);
+    /**
+     * 模板是否自带 @page at-rule：只允许 @page 后紧跟「可选伪类 + 可选页名 + {」。
+     * 不含任意文本，避免把注释里的「@page 由 PageSetup 注入」误判为规则（内置模板正是这种写法，
+     * 误判会让内置模板的纸张注入整体失效）。
+     */
+    private static final Pattern PAGE_RULE = Pattern.compile("@page\\s*(?::[a-z-]+\\s*)?(?:[a-z_-][\\w-]*\\s*)?\\{", Pattern.CASE_INSENSITIVE);
     private static final Pattern HEAD_END = Pattern.compile("</head>", Pattern.CASE_INSENSITIVE);
     private static final Pattern BODY_START = Pattern.compile("<body[^>]*>", Pattern.CASE_INSENSITIVE);
 
@@ -67,7 +72,7 @@ public final class PageSetup {
             return null;
         }
         // 注入规则追加在 head 末尾，模板自身 @page 靠 CSS 级联被最后规则覆盖
-        String margin = PAPER_PIN_FEED.equals(paper) ? "margin: 5mm 8mm;" : "margin: 8mm;";
+        String margin = PIN_FEED_PAPERS.contains(paper) ? "margin: 5mm 8mm;" : "margin: 8mm;";
         return "@page { size: " + m.group(1) + "mm " + m.group(2) + "mm; " + margin + " }";
     }
 

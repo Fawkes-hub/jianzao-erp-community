@@ -23,12 +23,14 @@ class PageSetupTest {
     }
 
     @Test
-    @DisplayName("三联单 241x140 输出针式纸规则，走纸边距取小值")
+    @DisplayName("三联单 241x140 / 241x93 输出针式纸规则，走纸边距取小值")
     void pinFeedPaper() {
         String rule = PageSetup.pageRule("241x140", null);
         assertEquals("@page { size: 241mm 140mm; margin: 5mm 8mm; }", rule);
         // style 包裹后可直接注入 head
         assertEquals("<style>" + rule + "</style>", PageSetup.pageStyle("241x140", null));
+        // 241×93 是更常见的三联单规格，与 241×140 共用小边距，避免默认 8mm 挤占可打印区
+        assertEquals("@page { size: 241mm 93mm; margin: 5mm 8mm; }", PageSetup.pageRule("241x93", null));
     }
 
     @Test
@@ -55,6 +57,22 @@ class PageSetupTest {
         assertNull(PageSetup.pageStyle("241x140", "<html><head><style>" + own + "</style></head></html>"));
         // paper 与自带 @page 纸张不一致时同样尊重模板（A4 纸字段、241 版面是模板作者的明确选择）
         assertNull(PageSetup.pageRule("A4", "<style>@page{size:241mm 140mm}</style>"));
+    }
+
+    @Test
+    @DisplayName("@page 支持 :first 伪类与具名页，仍识别为自带规则")
+    void pageRuleWithPseudoAndName() {
+        assertNull(PageSetup.pageRule("A4", "<style>@page :first { margin: 0; }</style>"));
+        assertNull(PageSetup.pageRule("A4", "<style>@page invoice { margin: 5mm; }</style>"));
+    }
+
+    @Test
+    @DisplayName("注释里的「@page」字样不算自带规则：内置模板仍按 paper 注入")
+    void commentMentioningPageNotTreatedAsRule() {
+        String builtin = BuiltinTemplates.saleDelivery().getContent();
+        assertTrue(builtin.contains("@page"));
+        // 内置模板注释「@page 由 PageSetup 按模板 paper 注入」曾被旧正则误判为自带规则，导致注入整体失效
+        assertEquals("@page { size: A4; margin: 12mm; }", PageSetup.pageRule("A4", builtin));
     }
 
     @Test
