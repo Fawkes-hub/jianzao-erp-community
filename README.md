@@ -76,6 +76,10 @@
 
 👉 **官网**：<https://jianzaoai360.cn>　|　**微信小程序**：微信搜索「简造 AI 开单」
 
+**微信扫码，直接打开「简造 AI 开单」小程序：**
+
+<img src="docs/images/miniapp-code.jpg" width="240" alt="简造 AI 开单小程序码" />
+
 > 社区版不包含商业版功能，也不构成商业版的功能承诺；商业版功能与授权范围以 [COMMERCIAL.md](COMMERCIAL.md) 为准。
 
 ## 快速开始
