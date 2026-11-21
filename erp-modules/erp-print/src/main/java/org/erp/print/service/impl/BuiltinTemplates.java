@@ -136,9 +136,10 @@ public final class BuiltinTemplates {
                 </tbody>
               </table>
               <div style="margin-top:10px;">
-                <div>期初应收：<span th:text="${statement.opening}">0.00</span></div>
+                <div>往月累计应收：<span th:text="${statement.previousReceivable}">0.00</span></div>
                 <div>本期销售：<span th:text="${statement.salesAmount}">0.00</span></div>
                 <div>本期收款：<span th:text="${statement.receiptAmount}">0.00</span></div>
+                <div>累计应收：<span th:text="${statement.totalReceivable}">0.00</span></div>
                 <div style="text-align:right; font-size:14px;">
                   期末应收：<b th:text="${statement.closing}">0.00</b> 元
                 </div>

@@ -49,7 +49,7 @@ import java.util.Map;
  *
  * 场景（DOC/12 §9、DOC/14）：送货单 / 对账单 / 收款单 / 付款单。
  * 模板解析：指定 templateId → 客户专属 → 租户默认 → 内置兜底。
- * 口径（D3）：对账单期初 + 本期销售（单据日期）− 本期收款（收款日期）= 期末。
+ * 口径：往月累计应收 + 本期销售净额 − 本期收款 = 期末应收。
  */
 @RequiredArgsConstructor
 @Service
@@ -137,15 +137,20 @@ public class PrintServiceImpl implements IPrintService {
         Date from = Date.from(first.atStartOfDay(ZoneId.systemDefault()).toInstant());
         Date to = Date.from(next.atStartOfDay(ZoneId.systemDefault()).toInstant());
 
-        // 期初：该客户 fin_ar_ap(OPENING) 台账 + md_customer.opening_debt（D1/R17：仅展示口径按 D1 期初台账）
-        BigDecimal opening = BigDecimal.ZERO;
-        List<FinArAp> openingRows = arApMapper.selectList(new LambdaQueryWrapper<FinArAp>()
-            .eq(FinArAp::getPartyType, "AR")
-            .eq(FinArAp::getPartyId, customerId)
-            .eq(FinArAp::getSourceType, "OPENING")
-            .ne(FinArAp::getStatus, STATUS_VOID));
-        for (FinArAp row : openingRows) {
-            opening = opening.add(nvl(row.getAmount()));
+        // 历史台账含期初、销售及退货；收款按收款日期扣除，避免按当前核销状态回溯。
+        BigDecimal previousReceivable = BigDecimal.ZERO;
+        for (FinArAp row : arApMapper.selectList(new LambdaQueryWrapper<FinArAp>()
+                .eq(FinArAp::getPartyType, "AR")
+                .eq(FinArAp::getPartyId, customerId)
+                .ne(FinArAp::getStatus, STATUS_VOID)
+                .lt(FinArAp::getBizDate, from))) {
+            previousReceivable = previousReceivable.add(nvl(row.getAmount()));
+        }
+        for (FinReceipt receipt : receiptMapper.selectList(new LambdaQueryWrapper<FinReceipt>()
+                .eq(FinReceipt::getCustomerId, customerId)
+                .eq(FinReceipt::getStatus, "CONFIRMED")
+                .lt(FinReceipt::getBizDate, from))) {
+            previousReceivable = previousReceivable.subtract(nvl(receipt.getAmount()));
         }
 
         // 本期销售（单据日期），已确认；按销售明细展开商品行
@@ -181,6 +186,18 @@ public class PrintServiceImpl implements IPrintService {
             }
         }
 
+        // 销售退货台账为负数，计入本期销售净额并在明细中展示。
+        for (FinArAp row : arApMapper.selectList(new LambdaQueryWrapper<FinArAp>()
+                .eq(FinArAp::getPartyType, "AR")
+                .eq(FinArAp::getPartyId, customerId)
+                .eq(FinArAp::getSourceType, "SALE_RETURN")
+                .ne(FinArAp::getStatus, STATUS_VOID)
+                .ge(FinArAp::getBizDate, from)
+                .lt(FinArAp::getBizDate, to))) {
+            salesAmount = salesAmount.add(nvl(row.getAmount()));
+            statementItems.add(statementItem(row.getBizDate(), "销售退货", "销售退货", null, nvl(row.getAmount()), null));
+        }
+
         // 本期收款（收款日期，已确认）
         BigDecimal receiptAmount = BigDecimal.ZERO;
         for (FinReceipt receipt : receiptMapper.selectList(new LambdaQueryWrapper<FinReceipt>()
@@ -197,17 +214,36 @@ public class PrintServiceImpl implements IPrintService {
             return c != 0 ? c : a.getNo().compareTo(b.getNo());
         });
 
-        BigDecimal closing = opening.add(salesAmount).subtract(receiptAmount);
+        // 截至今天的客户全部应收独立计算，不受所选账期限制。
+        Date tomorrow = Date.from(LocalDate.now().plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant());
+        BigDecimal totalReceivable = BigDecimal.ZERO;
+        for (FinArAp row : arApMapper.selectList(new LambdaQueryWrapper<FinArAp>()
+                .eq(FinArAp::getPartyType, "AR")
+                .eq(FinArAp::getPartyId, customerId)
+                .ne(FinArAp::getStatus, STATUS_VOID)
+                .lt(FinArAp::getBizDate, tomorrow))) {
+            totalReceivable = totalReceivable.add(nvl(row.getAmount()));
+        }
+        for (FinReceipt receipt : receiptMapper.selectList(new LambdaQueryWrapper<FinReceipt>()
+                .eq(FinReceipt::getCustomerId, customerId)
+                .eq(FinReceipt::getStatus, "CONFIRMED")
+                .lt(FinReceipt::getBizDate, tomorrow))) {
+            totalReceivable = totalReceivable.subtract(nvl(receipt.getAmount()));
+        }
+
+        BigDecimal closing = previousReceivable.add(salesAmount).subtract(receiptAmount);
 
         PrintContext ctx = new PrintContext();
         fillPartner(ctx, "AR", customerId);
         ctx.getDoc().setType("STATEMENT");
         PrintContext.Statement statement = new PrintContext.Statement();
         statement.setMonth(month);
-        statement.setOpening(opening.setScale(2, RoundingMode.HALF_UP));
+        statement.setPreviousReceivable(previousReceivable.setScale(2, RoundingMode.HALF_UP));
+        statement.setOpening(statement.getPreviousReceivable());
         statement.setSalesAmount(salesAmount.setScale(2, RoundingMode.HALF_UP));
         statement.setReceiptAmount(receiptAmount.setScale(2, RoundingMode.HALF_UP));
         statement.setClosing(closing.setScale(2, RoundingMode.HALF_UP));
+        statement.setTotalReceivable(totalReceivable.setScale(2, RoundingMode.HALF_UP));
         statement.setItems(statementItems);
         ctx.setStatement(statement);
         return render(ctx, templateId, "STATEMENT", customerId);
@@ -341,9 +377,11 @@ public class PrintServiceImpl implements IPrintService {
         PrintContext.Statement statement = new PrintContext.Statement();
         statement.setMonth(LocalDate.now().format(MONTH_FMT));
         statement.setOpening(new BigDecimal("2000.00"));
+        statement.setPreviousReceivable(new BigDecimal("2000.00"));
         statement.setSalesAmount(new BigDecimal("500.00"));
         statement.setReceiptAmount(new BigDecimal("300.00"));
         statement.setClosing(new BigDecimal("2200.00"));
+        statement.setTotalReceivable(new BigDecimal("2500.00"));
         PrintContext.StatementItem si = new PrintContext.StatementItem();
         si.setDate(new Date());
         si.setNo("XS202610050001");

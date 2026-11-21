@@ -108,6 +108,8 @@ public class PrintContext {
     public static class Statement {
         private String month;
         private BigDecimal opening;
+        private BigDecimal previousReceivable;
+        private BigDecimal totalReceivable;
         private BigDecimal salesAmount;
         private BigDecimal receiptAmount;
         private BigDecimal closing;

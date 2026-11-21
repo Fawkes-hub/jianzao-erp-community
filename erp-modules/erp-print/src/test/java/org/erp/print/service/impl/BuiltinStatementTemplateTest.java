@@ -45,6 +45,8 @@ class BuiltinStatementTemplateTest {
         PrintContext.Statement statement = new PrintContext.Statement();
         statement.setMonth("2026-11");
         statement.setOpening(BigDecimal.ZERO);
+        statement.setPreviousReceivable(BigDecimal.ZERO);
+        statement.setTotalReceivable(new BigDecimal("250.00"));
         statement.setSalesAmount(new BigDecimal("280.00"));
         statement.setReceiptAmount(new BigDecimal("100.00"));
         statement.setClosing(new BigDecimal("180.00"));
@@ -57,6 +59,9 @@ class BuiltinStatementTemplateTest {
 
         String html = ThymeleafRenderer.render(BuiltinTemplates.statement().getContent(), model);
 
+        assertTrue(html.contains("往月累计应收"));
+        assertTrue(html.contains("期末应收"));
+        assertTrue(html.contains("累计应收：<span>250.00</span>"));
         assertTrue(html.contains("单价"), "表头应包含单价列");
         assertFalse(html.contains(">内容<"), "表头不应再包含内容列");
         assertFalse(html.contains(">销售<"), "单元格不应再输出硬编码的销售常量");
