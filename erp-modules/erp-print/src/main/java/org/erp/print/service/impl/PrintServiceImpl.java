@@ -139,18 +139,24 @@ public class PrintServiceImpl implements IPrintService {
 
         // 历史台账含期初、销售及退货；收款按收款日期扣除，避免按当前核销状态回溯。
         BigDecimal previousReceivable = BigDecimal.ZERO;
+        BigDecimal historicalSales = BigDecimal.ZERO;
+        BigDecimal historicalReceipts = BigDecimal.ZERO;
         for (FinArAp row : arApMapper.selectList(new LambdaQueryWrapper<FinArAp>()
                 .eq(FinArAp::getPartyType, "AR")
                 .eq(FinArAp::getPartyId, customerId)
                 .ne(FinArAp::getStatus, STATUS_VOID)
                 .lt(FinArAp::getBizDate, from))) {
             previousReceivable = previousReceivable.add(nvl(row.getAmount()));
+            if ("SALE".equals(row.getSourceType()) || "SALE_RETURN".equals(row.getSourceType())) {
+                historicalSales = historicalSales.add(nvl(row.getAmount()));
+            }
         }
         for (FinReceipt receipt : receiptMapper.selectList(new LambdaQueryWrapper<FinReceipt>()
                 .eq(FinReceipt::getCustomerId, customerId)
                 .eq(FinReceipt::getStatus, "CONFIRMED")
                 .lt(FinReceipt::getBizDate, from))) {
             previousReceivable = previousReceivable.subtract(nvl(receipt.getAmount()));
+            historicalReceipts = historicalReceipts.add(nvl(receipt.getAmount()));
         }
 
         // 本期销售（单据日期），已确认；按销售明细展开商品行
@@ -214,21 +220,24 @@ public class PrintServiceImpl implements IPrintService {
             return c != 0 ? c : a.getNo().compareTo(b.getNo());
         });
 
-        // 截至今天的客户全部应收独立计算，不受所选账期限制。
+        // 累计未付按所选月末截止；旧字段累计应收仍按当天截止。
         Date tomorrow = Date.from(LocalDate.now().plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant());
         BigDecimal totalReceivable = BigDecimal.ZERO;
+        BigDecimal cumulativeUnpaid = BigDecimal.ZERO;
         for (FinArAp row : arApMapper.selectList(new LambdaQueryWrapper<FinArAp>()
                 .eq(FinArAp::getPartyType, "AR")
                 .eq(FinArAp::getPartyId, customerId)
                 .ne(FinArAp::getStatus, STATUS_VOID)
-                .lt(FinArAp::getBizDate, tomorrow))) {
-            totalReceivable = totalReceivable.add(nvl(row.getAmount()));
+                .lt(FinArAp::getBizDate, to.after(tomorrow) ? to : tomorrow))) {
+            if (row.getBizDate().before(to)) cumulativeUnpaid = cumulativeUnpaid.add(nvl(row.getAmount()));
+            if (row.getBizDate().before(tomorrow)) totalReceivable = totalReceivable.add(nvl(row.getAmount()));
         }
         for (FinReceipt receipt : receiptMapper.selectList(new LambdaQueryWrapper<FinReceipt>()
                 .eq(FinReceipt::getCustomerId, customerId)
                 .eq(FinReceipt::getStatus, "CONFIRMED")
-                .lt(FinReceipt::getBizDate, tomorrow))) {
-            totalReceivable = totalReceivable.subtract(nvl(receipt.getAmount()));
+                .lt(FinReceipt::getBizDate, to.after(tomorrow) ? to : tomorrow))) {
+            if (receipt.getBizDate().before(to)) cumulativeUnpaid = cumulativeUnpaid.subtract(nvl(receipt.getAmount()));
+            if (receipt.getBizDate().before(tomorrow)) totalReceivable = totalReceivable.subtract(nvl(receipt.getAmount()));
         }
 
         BigDecimal closing = previousReceivable.add(salesAmount).subtract(receiptAmount);
@@ -242,6 +251,10 @@ public class PrintServiceImpl implements IPrintService {
         statement.setOpening(statement.getPreviousReceivable());
         statement.setSalesAmount(salesAmount.setScale(2, RoundingMode.HALF_UP));
         statement.setReceiptAmount(receiptAmount.setScale(2, RoundingMode.HALF_UP));
+        statement.setMonthlyUnpaid(salesAmount.subtract(receiptAmount).setScale(2, RoundingMode.HALF_UP));
+        statement.setCumulativeSales(historicalSales.add(salesAmount).setScale(2, RoundingMode.HALF_UP));
+        statement.setCumulativeReceipts(historicalReceipts.add(receiptAmount).setScale(2, RoundingMode.HALF_UP));
+        statement.setCumulativeUnpaid(cumulativeUnpaid.setScale(2, RoundingMode.HALF_UP));
         statement.setClosing(closing.setScale(2, RoundingMode.HALF_UP));
         statement.setTotalReceivable(totalReceivable.setScale(2, RoundingMode.HALF_UP));
         statement.setItems(statementItems);
@@ -380,6 +393,10 @@ public class PrintServiceImpl implements IPrintService {
         statement.setPreviousReceivable(new BigDecimal("2000.00"));
         statement.setSalesAmount(new BigDecimal("500.00"));
         statement.setReceiptAmount(new BigDecimal("300.00"));
+        statement.setMonthlyUnpaid(new BigDecimal("200.00"));
+        statement.setCumulativeSales(new BigDecimal("2500.00"));
+        statement.setCumulativeReceipts(new BigDecimal("300.00"));
+        statement.setCumulativeUnpaid(new BigDecimal("2200.00"));
         statement.setClosing(new BigDecimal("2200.00"));
         statement.setTotalReceivable(new BigDecimal("2500.00"));
         PrintContext.StatementItem si = new PrintContext.StatementItem();

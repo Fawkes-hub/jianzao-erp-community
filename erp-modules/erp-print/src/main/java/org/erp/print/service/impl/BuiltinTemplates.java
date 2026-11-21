@@ -99,6 +99,7 @@ public final class BuiltinTemplates {
                 th, td { border: 1px solid #333; padding: 5px 6px; }
                 th { background: #f0f0f0; }
                 .num { text-align: right; }
+                .summary { display: flex; justify-content: space-between; margin-top: 10px; line-height: 1.8; }
                 .sign { display: flex; justify-content: space-between; margin-top: 30px; }
               </style>
             </head>
@@ -135,17 +136,20 @@ public final class BuiltinTemplates {
                   </tr>
                 </tbody>
               </table>
-              <div style="margin-top:10px;">
-                <div>往月累计应收：<span th:text="${statement.previousReceivable}">0.00</span></div>
-                <div>本期销售：<span th:text="${statement.salesAmount}">0.00</span></div>
-                <div>本期收款：<span th:text="${statement.receiptAmount}">0.00</span></div>
-                <div>累计应收：<span th:text="${statement.totalReceivable}">0.00</span></div>
-                <div style="text-align:right; font-size:14px;">
-                  期末应收：<b th:text="${statement.closing}">0.00</b> 元
+              <div class="summary" style="display: flex; justify-content: space-between; margin-top: 10px; line-height: 1.8;">
+                <div>
+                  <div>当月销售金额：<span th:text="${statement.salesAmount}">0.00</span></div>
+                  <div>当月收款金额：<span th:text="${statement.receiptAmount}">0.00</span></div>
+                  <div>当月未付金额：<span th:text="${statement.monthlyUnpaid}">0.00</span></div>
+                </div>
+                <div>
+                  <div>累计销售金额：<span th:text="${statement.cumulativeSales}">0.00</span></div>
+                  <div>累计收款金额：<span th:text="${statement.cumulativeReceipts}">0.00</span></div>
+                  <div>累计未付金额：<b th:text="${statement.cumulativeUnpaid}">0.00</b> 元</div>
                 </div>
               </div>
               <div class="sign">
-                <span>制单：______________</span>
+                <span>制单：<span th:text="${tenant.name}">成都鑫盛合科技</span></span>
                 <span>客户确认：______________</span>
               </div>
             </body>

@@ -112,6 +112,10 @@ public class PrintContext {
         private BigDecimal totalReceivable;
         private BigDecimal salesAmount;
         private BigDecimal receiptAmount;
+        private BigDecimal monthlyUnpaid;
+        private BigDecimal cumulativeSales;
+        private BigDecimal cumulativeReceipts;
+        private BigDecimal cumulativeUnpaid;
         private BigDecimal closing;
         private List<StatementItem> items = new ArrayList<>();
     }
