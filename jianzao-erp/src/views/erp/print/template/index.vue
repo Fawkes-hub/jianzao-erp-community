@@ -108,7 +108,7 @@
             </t-form-item>
           </t-col>
           <t-col :span="4">
-            <t-form-item label="纸张">
+            <t-form-item label="纸张" name="paper">
               <t-select v-model="form.paper" placeholder="A4" :options="paperOptions" />
             </t-form-item>
           </t-col>
@@ -127,6 +127,13 @@
         <t-form-item label="模板内容" name="content">
           <t-textarea v-model="form.content" :autosize="{ minRows: 16, maxRows: 16 }" placeholder="HTML 模板，支持 Thymeleaf 表达式" />
         </t-form-item>
+        <!-- 纸张与驱动一致才不会缩放：针式打印机装 241×140 连续纸时选「三联单」，@page 与驱动纸宽一致，浏览器按 1:1 输出 -->
+        <t-alert
+          theme="info"
+          :close="false"
+          class="mb-2"
+          title="纸张会以 @page 写入打印页：打印时请在系统打印对话框选择相同纸张、缩放保持 100%。针式打印机装 241×140 连续纸请选「三联单 241x140」，并在驱动里建同名自定义纸张。"
+        />
       </t-form>
 
       <template #footer>
@@ -410,7 +417,8 @@ const handlePreview = async (row: PrintTemplateVO) => {
   const res = (await previewPrintTemplate({
     scene: detail.scene,
     content: detail.content,
-    customerId: detail.customerId
+    customerId: detail.customerId,
+    paper: detail.paper ?? 'A4'
   })) as unknown as string;
   const html = res ?? '';
   // 模板渲染异常时全局异常处理器返回 R JSON（text 透传），提示错误而不是塞进 iframe

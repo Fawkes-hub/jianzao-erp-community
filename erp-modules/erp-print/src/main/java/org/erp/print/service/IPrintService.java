@@ -29,6 +29,7 @@ public interface IPrintService {
 
     /**
      * 模板编辑预览：用示例数据渲染编辑中的模板内容。
+     * paper 为模板纸张字段（A4/A5/宽x高 mm/AUTO），按同样规则注入 @page，预览即所得。
      */
-    String preview(String scene, String content, Long customerId, boolean showProfit);
+    String preview(String scene, String content, Long customerId, boolean showProfit, String paper);
 }

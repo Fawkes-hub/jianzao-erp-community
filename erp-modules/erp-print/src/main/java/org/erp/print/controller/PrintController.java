@@ -101,8 +101,9 @@ public class PrintController extends BaseController {
     public String preview(@RequestParam String scene,
                           @RequestBody String content,
                           @RequestParam(required = false) Long customerId,
-                          @RequestParam(defaultValue = "false") boolean showProfit) {
-        return printService.preview(scene, content, customerId, showProfit);
+                          @RequestParam(defaultValue = "false") boolean showProfit,
+                          @RequestParam(required = false) String paper) {
+        return printService.preview(scene, content, customerId, showProfit, paper);
     }
 
     /**

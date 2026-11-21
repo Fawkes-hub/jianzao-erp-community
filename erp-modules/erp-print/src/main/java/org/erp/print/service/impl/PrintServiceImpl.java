@@ -242,9 +242,11 @@ public class PrintServiceImpl implements IPrintService {
     }
 
     @Override
-    public String preview(String scene, String content, Long customerId, boolean showProfit) {
+    public String preview(String scene, String content, Long customerId, boolean showProfit, String paper) {
         PrintContext ctx = sampleContext(scene, showProfit);
-        return ThymeleafRenderer.render(content, toModel(ctx));
+        String rendered = ThymeleafRenderer.render(content, toModel(ctx));
+        // 预览与正式渲染同一纸张规则：模板自带 @page 时尊重原设定，否则按 paper 注入
+        return PageSetup.injectIntoHead(rendered, PageSetup.pageStyle(paper, rendered));
     }
 
     private String renderReceiptPayment(String no, String type, Long partyId, BigDecimal amount,
@@ -270,7 +272,10 @@ public class PrintServiceImpl implements IPrintService {
         }
         ctx.setPrintDate(LocalDate.now().format(DATE_FMT));
         String rendered = ThymeleafRenderer.render(template.getContent(), toModel(ctx));
-        return ThymeleafRenderer.renderWithCopies(rendered, ctx.getCopies() == null ? 1 : ctx.getCopies());
+        // paper 落地：模板未自带 @page 时按模板纸张生成并注入 head，避免针打实际装纸
+        // （如 241×140）与页面声明 A4 不一致时浏览器等比缩小版面；自带 @page 的模板尊重原设定
+        String withPage = PageSetup.injectIntoHead(rendered, PageSetup.pageStyle(template.getPaper(), rendered));
+        return ThymeleafRenderer.renderWithCopies(withPage, ctx.getCopies() == null ? 1 : ctx.getCopies());
     }
 
     /**

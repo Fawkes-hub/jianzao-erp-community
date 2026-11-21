@@ -418,6 +418,8 @@
           <template #icon><PrintIcon /></template>
           打印
         </t-button>
+        <!-- 针打缩小问题多因打印对话框纸张与实际装纸不一致：提示用户核对纸张与缩放 -->
+        <span class="print-dialog-hint">打印对话框请选择与实际装纸一致的纸张，缩放 100%</span>
       </div>
       <div v-loading="printDialog.loading" style="min-height: 200px">
         <iframe
@@ -1485,5 +1487,10 @@ onActivated(consumeRouteQuery);
    注意 .erp-clickable-table 与 .t-table 落在同一个根元素上，选择器里不能再写一代 .t-table */
 .erp-clickable-table :deep(tbody tr) {
   cursor: pointer;
+}
+
+.print-dialog-hint {
+  font-size: 12px;
+  color: var(--td-text-color-secondary);
 }
 </style>

@@ -19,7 +19,7 @@ public final class BuiltinTemplates {
             <head>
               <meta charset="UTF-8">
               <style>
-                @page { size: A4; margin: 12mm; }
+                /* @page 由 PageSetup 按模板 paper 注入，此处不再硬编码纸张 */
                 body { font-family: "Microsoft YaHei", "PingFang SC", sans-serif; font-size: 12px; color: #000; }
                 h1 { text-align: center; font-size: 20px; letter-spacing: 4px; margin: 0 0 8px; }
                 .meta { display: flex; justify-content: space-between; margin-bottom: 10px; }
@@ -90,7 +90,7 @@ public final class BuiltinTemplates {
             <head>
               <meta charset="UTF-8">
               <style>
-                @page { size: A4; margin: 12mm; }
+                /* @page 由 PageSetup 按模板 paper 注入，此处不再硬编码纸张 */
                 body { font-family: "Microsoft YaHei", "PingFang SC", sans-serif; font-size: 12px; }
                 h1 { text-align: center; font-size: 20px; letter-spacing: 4px; margin: 0 0 4px; }
                 .sub { text-align: center; color: #666; margin-bottom: 14px; }
@@ -159,7 +159,7 @@ public final class BuiltinTemplates {
             <head>
               <meta charset="UTF-8">
               <style>
-                @page { size: A5; margin: 10mm; }
+                /* @page 由 PageSetup 按模板 paper 注入，此处不再硬编码纸张 */
                 body { font-family: "Microsoft YaHei", "PingFang SC", sans-serif; font-size: 12px; }
                 h1 { text-align: center; font-size: 18px; letter-spacing: 4px; }
                 .meta { display: flex; justify-content: space-between; margin: 10px 0; }

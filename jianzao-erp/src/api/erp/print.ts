@@ -44,6 +44,8 @@ export function previewPrintTemplate(params: {
   content: string;
   customerId?: string | number;
   showProfit?: boolean;
+  /** 模板纸张：A4/A5/宽x高(mm)/AUTO，后端按此注入 @page */
+  paper?: string;
 }): AxiosPromise<string> {
   return request({
     url: '/erp/print/preview',
@@ -51,7 +53,8 @@ export function previewPrintTemplate(params: {
     params: {
       scene: params.scene,
       customerId: params.customerId,
-      showProfit: params.showProfit ?? false
+      showProfit: params.showProfit ?? false,
+      paper: params.paper
     },
     data: params.content,
     headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
