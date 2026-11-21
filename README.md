@@ -74,11 +74,11 @@
 - **SaaS 多企业**：多企业账户、试用套餐与运营后台
 - **商业授权与支持**：闭源集成、OEM、私有化部署、定制开发
 
-👉 **官网**：<https://jianzaoai360.cn>　|　**微信小程序**：微信搜索「简造 AI 开单」
+👉 **官网**：<https://jianzaoai360.cn>　|　**微信小程序**：微信搜索「简造AI开单-进销存」
 
-**微信扫码，直接打开「简造 AI 开单」小程序：**
+**微信扫码，直接打开「简造AI开单-进销存」小程序：**
 
-<img src="docs/images/miniapp-code.jpg" width="240" alt="简造 AI 开单小程序码" />
+<img src="docs/images/miniapp-code.jpg" width="240" alt="简造AI开单-进销存小程序码" />
 
 > 社区版不包含商业版功能，也不构成商业版的功能承诺；商业版功能与授权范围以 [COMMERCIAL.md](COMMERCIAL.md) 为准。
 

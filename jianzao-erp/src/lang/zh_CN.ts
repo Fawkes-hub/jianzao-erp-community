@@ -23,7 +23,7 @@ export default {
     headlinePrefix: '登录到',
     copyright: 'Copyright © 2026 简造ERP社区版',
     commercial: '商业版：生产单 / 委外 / 盘点 / 微信小程序',
-    commercialHint: '微信搜索「简造 AI 开单」',
+    commercialHint: '微信搜索「简造AI开单-进销存」',
     headline: '采购 · 销售 · 库存 · 财务一体化',
     subhead: '基础进销存闭环 · 开源可二次开发',
     slogan: '采购 · 销售 · 库存 · 财务一体化 · 开源可二次开发',
