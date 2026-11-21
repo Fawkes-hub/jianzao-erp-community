@@ -32,7 +32,15 @@
       </div>
 
       <t-empty v-if="!statementHtml" description="请选择客户与账期后点击预览" :image-style="{ fontSize: '100px' }" />
-      <iframe v-else ref="iframeRef" class="statement-frame" :srcdoc="statementHtml" sandbox="allow-same-origin" title="对账单预览"></iframe>
+      <iframe
+        v-else
+        ref="iframeRef"
+        class="statement-frame"
+        style="display: block; width: 100%; height: 70vh; min-height: 600px; box-sizing: border-box"
+        :srcdoc="statementHtml"
+        sandbox="allow-same-origin allow-modals"
+        title="对账单预览"
+      ></iframe>
     </div>
   </div>
 </template>
