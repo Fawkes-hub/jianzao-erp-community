@@ -167,6 +167,34 @@ class PrintStatementQtyScaleTest {
         assertTrue(html.contains("退款"), "明细中应展示退款摘要");
     }
 
+    @Test
+    @DisplayName("期初截止日落在账期当月时，期初与期末应收包含期初金额")
+    void openingDateInsideMonth_countedInOpeningAndClosing() {
+        IPrintTemplateService templates = mock(IPrintTemplateService.class);
+        ErpSaleMapper sales = mock(ErpSaleMapper.class);
+        ErpSaleItemMapper items = mock(ErpSaleItemMapper.class);
+        FinArApMapper ledger = mock(FinArApMapper.class);
+        FinReceiptMapper receipts = mock(FinReceiptMapper.class);
+        ErpCustomerMapper customers = mock(ErpCustomerMapper.class);
+
+        // 期初截止日 2026-09-30，查 2026-09 账期：该笔期初必须进「期初应收/期末应收」
+        FinArAp opening = new FinArAp();
+        opening.setSourceType("OPENING");
+        opening.setAmount(new BigDecimal("65004.00"));
+        opening.setBizDate(java.sql.Date.valueOf("2026-09-30"));
+        when(ledger.selectList(any())).thenReturn(List.of(opening), List.of(), List.of(opening));
+        when(receipts.selectList(any())).thenReturn(List.of(), List.of(), List.of());
+        when(sales.selectList(any())).thenReturn(List.of());
+        when(items.selectList(any())).thenReturn(List.of());
+        when(customers.selectById(9L)).thenReturn(new ErpCustomer());
+
+        PrintServiceImpl service = new PrintServiceImpl(templates, sales, receipts, null, null, null, ledger, null, customers, null, null, items, null);
+        String html = service.renderStatement(9L, "2026-09", null);
+
+        assertTrue(html.contains("期初应收：<span>65004.00</span>"), "期初所属月的上期结余应为期初金额");
+        assertTrue(html.contains("期末应收：<b>65004.00</b>"), "期初所属月的期末应收应等于期初金额");
+    }
+
     private static ErpSaleItem saleItem(Long productId, BigDecimal qty) {
         ErpSaleItem item = new ErpSaleItem();
         item.setProductId(productId);

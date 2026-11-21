@@ -8,10 +8,14 @@ import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.erp.common.enums.StatusText;
 import org.erp.fin.domain.FinArAp;
+import org.erp.fin.domain.FinPayment;
+import org.erp.fin.domain.FinReceipt;
 import org.erp.fin.domain.FinSourceNo;
 import org.erp.fin.domain.vo.FinArApSummaryVo;
 import org.erp.fin.domain.vo.FinArApVo;
 import org.erp.fin.mapper.FinArApMapper;
+import org.erp.fin.mapper.FinPaymentMapper;
+import org.erp.fin.mapper.FinReceiptMapper;
 import org.erp.fin.mapper.FinSourceNoMapper;
 import org.erp.fin.service.IFinArApService;
 import org.erp.master.domain.ErpCustomer;
@@ -54,6 +58,8 @@ public class FinArApServiceImpl implements IFinArApService {
 
     private final FinArApMapper arApMapper;
     private final FinSourceNoMapper sourceNoMapper;
+    private final FinReceiptMapper receiptMapper;
+    private final FinPaymentMapper paymentMapper;
     private final ErpCustomerMapper customerMapper;
     private final ErpSupplierMapper supplierMapper;
 
@@ -160,18 +166,20 @@ public class FinArApServiceImpl implements IFinArApService {
         if (!PARTY_AR.equals(partyType) && !PARTY_AP.equals(partyType)) {
             throw new ServiceException("期初类型必须是 AR 或 AP");
         }
-        // 期初可重录：先冲销旧期初（旧期初不允许已核销）
+        // 期初可重录：先冲销旧期初（旧期初不允许已核销）。
+        // 逐行加行锁再判 settled，避免读到 0 之后被并发收款核销掉
         List<FinArAp> oldOpenings = arApMapper.selectList(new LambdaQueryWrapper<FinArAp>()
             .eq(FinArAp::getPartyType, partyType)
             .eq(FinArAp::getPartyId, partyId)
             .eq(FinArAp::getSourceType, SOURCE_OPENING)
             .ne(FinArAp::getStatus, STATUS_VOID));
         for (FinArAp old : oldOpenings) {
-            if (old.getSettledAmount().compareTo(BigDecimal.ZERO) > 0) {
+            FinArAp locked = arApMapper.selectByIdForUpdate(old.getId());
+            if (locked.getSettledAmount().compareTo(BigDecimal.ZERO) > 0) {
                 throw new ServiceException("期初已发生核销，禁止重录", 40904);
             }
-            old.setStatus(STATUS_VOID);
-            arApMapper.updateById(old);
+            locked.setStatus(STATUS_VOID);
+            arApMapper.updateById(locked);
         }
         create(partyType, partyId, SOURCE_OPENING, openingId, amount, bizDate);
     }
@@ -384,12 +392,35 @@ public class FinArApServiceImpl implements IFinArApService {
     }
 
     /**
-     * 委外加工单完工生成应付账款（partyType=AP, sourceType=SUBCONTRACT）。
+     * 统计期初截止日之前已确认的业务单据数（AR=销售/销售退货/收款，AP=采购/采购退货/付款）。
      *
-     * @param subcontractId 委外单ID
-     * @param subcontractNo 委外单号
-     * @param supplierId 加工商ID
-     * @param amount 应付加工费合计
-     * @param bizDate 业务日期
+     * @param partyType AR/AP
+     * @param partyId   客户/供应商ID
+     * @param before    时间上界（不含）
+     * @return 区间内已确认单据数
      */
+    @Override
+    public long countBusinessBefore(String partyType, Long partyId, Date before) {
+        boolean ar = PARTY_AR.equals(partyType);
+        // 只列业务来源，天然排除 OPENING 自身，避免重录期初时把旧期初行算成"已存在单据"
+        List<String> sources = ar
+            ? List.of("SALE", "SALE_RETURN")
+            : List.of("PURCHASE", "PURCHASE_RETURN");
+        Long ledger = arApMapper.selectCount(new LambdaQueryWrapper<FinArAp>()
+            .eq(FinArAp::getPartyType, partyType)
+            .eq(FinArAp::getPartyId, partyId)
+            .in(FinArAp::getSourceType, sources)
+            .ne(FinArAp::getStatus, STATUS_VOID)
+            .lt(FinArAp::getBizDate, before));
+        Long settled = ar
+            ? receiptMapper.selectCount(new LambdaQueryWrapper<FinReceipt>()
+                .eq(FinReceipt::getCustomerId, partyId)
+                .eq(FinReceipt::getStatus, "CONFIRMED")
+                .lt(FinReceipt::getBizDate, before))
+            : paymentMapper.selectCount(new LambdaQueryWrapper<FinPayment>()
+                .eq(FinPayment::getSupplierId, partyId)
+                .eq(FinPayment::getStatus, "CONFIRMED")
+                .lt(FinPayment::getBizDate, before));
+        return (ledger == null ? 0L : ledger) + (settled == null ? 0L : settled);
+    }
 }

@@ -5,6 +5,8 @@ import org.dromara.common.core.exception.ServiceException;
 import org.erp.fin.domain.FinArAp;
 import org.erp.fin.domain.FinSourceNo;
 import org.erp.fin.mapper.FinArApMapper;
+import org.erp.fin.mapper.FinPaymentMapper;
+import org.erp.fin.mapper.FinReceiptMapper;
 import org.erp.fin.mapper.FinSourceNoMapper;
 import org.erp.master.domain.ErpCustomer;
 import org.erp.master.domain.ErpSupplier;
@@ -52,6 +54,10 @@ class FinArApServiceImplTest {
     @Mock
     private FinSourceNoMapper sourceNoMapper;
     @Mock
+    private FinReceiptMapper receiptMapper;
+    @Mock
+    private FinPaymentMapper paymentMapper;
+    @Mock
     private ErpCustomerMapper customerMapper;
     @Mock
     private ErpSupplierMapper supplierMapper;
@@ -60,7 +66,7 @@ class FinArApServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new FinArApServiceImpl(arApMapper, sourceNoMapper, customerMapper, supplierMapper);
+        service = new FinArApServiceImpl(arApMapper, sourceNoMapper, receiptMapper, paymentMapper, customerMapper, supplierMapper);
         when(arApMapper.insert(any(FinArAp.class))).thenReturn(1);
         when(arApMapper.updateById(any(FinArAp.class))).thenReturn(1);
         when(arApMapper.selectCount(any(Wrapper.class))).thenReturn(0L);
@@ -142,6 +148,7 @@ class FinArApServiceImplTest {
     void createOpening_rerecord_voidsOldOpening() {
         FinArAp old = arRow(1L, "AR", 9L, "OPENING", 300L, "2000.00", "0", "OPEN");
         when(arApMapper.selectList(any(Wrapper.class))).thenReturn(List.of(old));
+        when(arApMapper.selectByIdForUpdate(1L)).thenReturn(old);
 
         service.createOpening("AR", 9L, new BigDecimal("2500.00"), 301L, BIZ_DATE);
 
@@ -156,6 +163,7 @@ class FinArApServiceImplTest {
     void createOpening_oldSettled_rejected40904() {
         FinArAp old = arRow(1L, "AR", 9L, "OPENING", 300L, "2000.00", "500.00", "PARTIAL");
         when(arApMapper.selectList(any(Wrapper.class))).thenReturn(List.of(old));
+        when(arApMapper.selectByIdForUpdate(1L)).thenReturn(old);
 
         ServiceException ex = assertThrows(ServiceException.class, () ->
             service.createOpening("AR", 9L, new BigDecimal("2500.00"), 301L, BIZ_DATE));
@@ -305,6 +313,33 @@ class FinArApServiceImplTest {
         ArgumentCaptor<java.util.Collection<Long>> captor = ArgumentCaptor.forClass(java.util.Collection.class);
         verify(sourceNoMapper, org.mockito.Mockito.times(1)).selectSaleNos(captor.capture());
         assertEquals(List.of(101L, 102L), List.copyOf(captor.getValue()));
+    }
+
+    // ---------- 期初截止日前的业务单据计数 ----------
+
+    @Test
+    void countBusinessBefore_ar_countsSalesAndReceipts() {
+        when(arApMapper.selectCount(any(Wrapper.class))).thenReturn(2L);
+        when(receiptMapper.selectCount(any(Wrapper.class))).thenReturn(1L);
+
+        long count = service.countBusinessBefore("AR", 9L, BIZ_DATE);
+
+        // 台账来源 + 已确认收款：一笔销售配一笔收款 = 2 条业务触发
+        assertEquals(3L, count);
+        verify(receiptMapper).selectCount(any(Wrapper.class));
+        verify(paymentMapper, never()).selectCount(any(Wrapper.class));
+    }
+
+    @Test
+    void countBusinessBefore_ap_countsPurchaseAndPayments() {
+        when(arApMapper.selectCount(any(Wrapper.class))).thenReturn(1L);
+        when(paymentMapper.selectCount(any(Wrapper.class))).thenReturn(2L);
+
+        long count = service.countBusinessBefore("AP", 10L, BIZ_DATE);
+
+        assertEquals(3L, count);
+        verify(paymentMapper).selectCount(any(Wrapper.class));
+        verify(receiptMapper, never()).selectCount(any(Wrapper.class));
     }
 
     // ---------- 辅助 ----------

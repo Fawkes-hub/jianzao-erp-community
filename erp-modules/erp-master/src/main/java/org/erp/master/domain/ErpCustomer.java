@@ -31,7 +31,8 @@ public class ErpCustomer extends TenantEntity {
     private String address;
 
     /**
-     * 期初欠款（仅录入展示，账面以 fin_opening/fin_ar_ap 为准）
+     * 期初欠款：仅为兼容档案字段保留，账面只认 fin_opening/fin_ar_ap，
+     * 界面改读台账 OPENING 汇总，不再作为录入入口。
      */
     private BigDecimal openingDebt;
 

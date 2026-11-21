@@ -2,11 +2,13 @@ package org.erp.fin.domain.bo;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /**
  * 期初往来 Bo（upsert：party_type+party_id 唯一）
@@ -24,6 +26,13 @@ public class FinOpeningBo {
     @NotNull(message = "期初金额不能为空")
     @PositiveOrZero(message = "期初金额不能为负")
     private BigDecimal amount;
+
+    /**
+     * 期初截止日（含当日）：期初金额表示该日期之前的账面余额，必须由用户指定。
+     */
+    @NotNull(message = "期初截止日不能为空")
+    @PastOrPresent(message = "期初截止日不能晚于今天")
+    private LocalDate openingDate;
 
     private String remark;
 }

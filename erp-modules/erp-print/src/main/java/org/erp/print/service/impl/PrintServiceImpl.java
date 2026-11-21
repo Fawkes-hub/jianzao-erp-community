@@ -138,6 +138,8 @@ public class PrintServiceImpl implements IPrintService {
         Date to = Date.from(next.atStartOfDay(ZoneId.systemDefault()).toInstant());
 
         // 历史台账含期初、销售及退货；收款按收款日期扣除，避免按当前核销状态回溯。
+        // 截止日落在本账期内的期初也要计入上期结余：期初金额是「截至当日」的余额，
+        // 该月之前不存在任何单据（期初确认时已校验），因此期初所属月的期末应收就等于期初金额。
         BigDecimal previousReceivable = BigDecimal.ZERO;
         BigDecimal historicalSales = BigDecimal.ZERO;
         BigDecimal historicalReceipts = BigDecimal.ZERO;
@@ -145,7 +147,8 @@ public class PrintServiceImpl implements IPrintService {
                 .eq(FinArAp::getPartyType, "AR")
                 .eq(FinArAp::getPartyId, customerId)
                 .ne(FinArAp::getStatus, STATUS_VOID)
-                .lt(FinArAp::getBizDate, from))) {
+                .and(w -> w.lt(FinArAp::getBizDate, from)
+                    .or(o -> o.eq(FinArAp::getSourceType, "OPENING").lt(FinArAp::getBizDate, to))))) {
             previousReceivable = previousReceivable.add(nvl(row.getAmount()));
             if ("SALE".equals(row.getSourceType()) || "SALE_RETURN".equals(row.getSourceType())) {
                 historicalSales = historicalSales.add(nvl(row.getAmount()));

@@ -588,6 +588,7 @@ CREATE TABLE IF NOT EXISTS fin_opening (
   party_type VARCHAR(8) NOT NULL COMMENT 'AR/AP',
   party_id BIGINT NOT NULL COMMENT '客户/供应商ID',
   amount DECIMAL(18,2) NOT NULL DEFAULT 0 COMMENT '期初金额',
+  opening_date DATE DEFAULT NULL COMMENT '期初截止日（含当日），确认时作为台账 biz_date',
   status VARCHAR(16) NOT NULL DEFAULT 'DRAFT' COMMENT 'DRAFT/CONFIRMED',
   remark VARCHAR(500) DEFAULT '',
   create_dept BIGINT DEFAULT NULL,

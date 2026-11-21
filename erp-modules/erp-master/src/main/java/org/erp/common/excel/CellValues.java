@@ -1,6 +1,9 @@
 package org.erp.common.excel;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 
@@ -92,5 +95,32 @@ public final class CellValues {
             errors.add(label + "取值无效：" + text);
         }
         return mapped;
+    }
+
+    /**
+     * 解析日期：兼容 yyyy-MM-dd 与 yyyy/M/d（用户从表格粘贴的常见格式）。
+     *
+     * @param value    单元格文本
+     * @param label    列名，用于错误提示
+     * @param required 是否必填
+     * @param errors   错误收集器
+     * @return 解析结果，格式错误或空值返回 null
+     */
+    public static LocalDate date(String value, String label, boolean required, List<String> errors) {
+        String text = text(value);
+        if (blank(text)) {
+            if (required) {
+                errors.add(label + "不能为空");
+            }
+            return null;
+        }
+        try {
+            // STRICT 解析：避免 SMART 把 2026-02-30 静默纠成 2026-02-28
+            return LocalDate.parse(text.replace('/', '-'),
+                DateTimeFormatter.ofPattern("uuuu-M-d").withResolverStyle(java.time.format.ResolverStyle.STRICT));
+        } catch (DateTimeParseException e) {
+            errors.add(label + "格式必须是 yyyy-MM-dd");
+            return null;
+        }
     }
 }

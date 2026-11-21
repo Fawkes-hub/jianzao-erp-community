@@ -77,7 +77,7 @@
             @select-change="handleSelectionChange"
             @column-resize-change="(ctx: any) => saveColumnWidths('master-supplier/list', ctx.columnsWidth)"
           >
-            <template #openingPayable="{ row }">{{ formatMoney(row.openingPayable) }}</template>
+            <template #openingPayable="{ row }">{{ row.openingPayable === undefined || row.openingPayable === null ? '-' : formatMoney(row.openingPayable) }}</template>
             <template #taxRate="{ row }">{{ formatPercent(row.taxRate) }}</template>
             <template #status="{ row }">
               <t-tag :theme="row.status === 1 ? 'success' : 'default'" size="small">{{ row.status === 1 ? '启用' : '停用' }}</t-tag>
@@ -192,11 +192,11 @@
                   <t-input v-model="form.phone" placeholder="请输入联系电话" />
                 </t-form-item>
               </t-col>
-              <t-col :span="6">
-                <t-form-item label="期初应付" name="openingPayable">
-                  <t-input-number v-model="form.openingPayable" :decimal-places="2" theme="normal" align="right" style="width: 100%" />
-                </t-form-item>
-              </t-col>
+                <t-col :span="6">
+                  <t-form-item label="期初应付" help="以财务→期初往来确认的期初为准，此处不可编辑">
+                    <t-input :value="formatMoney(openingPayableDisplay)" disabled />
+                  </t-form-item>
+                </t-col>
               <t-col :span="6">
                 <t-form-item label="税率" name="taxRate">
                   <t-input-number v-model="form.taxRate" :decimal-places="2" :min="0" :max="100" :allow-input-over-limit="false" theme="normal" align="right" style="width: 100%" />
@@ -239,6 +239,7 @@
 import { listSupplier, getSupplier, addSupplier, updateSupplier, delSupplier } from '@/api/erp/master';
 import type { ErpImportResult } from '@/api/erp/master';
 import type { ErpSupplierForm, ErpSupplierVO } from '@/api/erp/types';
+import { arApSummary } from '@/api/erp/finance';
 import { formatMoney, formatPercent } from '@/utils/erp/calc';
 import { checkPermi } from '@/utils/permission';
 import { globalHeaders } from '@/utils/request';
@@ -254,6 +255,8 @@ interface SupplierQuery extends PageQuery {
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const supplierList = ref<ErpSupplierVO[]>([]);
+/** 期初应付只读展示值：来自台账 OPENING 汇总，不随表单提交 */
+const openingPayableDisplay = ref(0);
 const loading = ref(true);
 const showSearch = ref(true);
 const ids = ref<Array<string | number>>([]);
@@ -297,7 +300,6 @@ const initFormData: ErpSupplierForm = {
   contact: '',
   phone: '',
   address: '',
-  openingPayable: 0,
   taxNo: '',
   taxRate: 0,
   status: 1,
@@ -364,7 +366,29 @@ const getList = async () => {
   loading.value = true;
   try {
     const res = await listSupplier(queryParams.value);
-    supplierList.value = res.rows ?? [];
+    const rows: ErpSupplierVO[] = res.rows ?? [];
+    // 期初应付只认台账 OPENING 汇总，不再读供应商档案字段，避免两处期初不一致。
+    // summary 需要 erp:finance:list，缺权角色直接按未加载展示，避免每次刷新弹 403。
+    if (!checkPermi(['erp:finance:list'])) {
+      rows.forEach((row) => {
+        row.openingPayable = undefined;
+      });
+    } else {
+      try {
+        const summary = await arApSummary('AP');
+        const openings = new Map<string, number>(
+          (summary.data?.parties ?? []).map((p) => [String(p.partyId), Number(p.opening ?? 0)] as [string, number])
+        );
+        rows.forEach((row) => {
+          row.openingPayable = openings.get(String(row.id));
+        });
+      } catch {
+        rows.forEach((row) => {
+          row.openingPayable = undefined;
+        });
+      }
+    }
+    supplierList.value = rows;
     total.value = res.total ?? 0;
     // 受控选中：换数据后清空勾选，保持 EP 的 el-table「重取即丢选中」行为
     ids.value = [];
@@ -396,6 +420,7 @@ const handleSelectionChange = (keys: Array<string | number>) => {
 /** 表单重置 */
 const reset = () => {
   form.value = { ...initFormData };
+  openingPayableDisplay.value = 0;
   supplierFormRef.value?.reset();
 };
 
@@ -413,7 +438,9 @@ const handleUpdate = async (row?: ErpSupplierVO) => {
   const res = await getSupplier(id);
   const detail = res.data;
   Object.assign(form.value, detail);
-  form.value.openingPayable = Number(detail.openingPayable ?? 0);
+  // 期初应付取列表里已按台账汇总后的值，不读档案字段
+  const listed = supplierList.value.find((row) => String(row.id) === String(id));
+  openingPayableDisplay.value = Number(listed?.openingPayable ?? 0);
   form.value.taxRate = Number(detail.taxRate ?? 0);
   form.value.status = detail.status ?? 1;
   dialog.visible = true;

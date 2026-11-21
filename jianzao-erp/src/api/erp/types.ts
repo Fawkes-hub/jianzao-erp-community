@@ -185,7 +185,6 @@ export interface ErpSupplierForm {
   contact?: string;
   phone?: string;
   address?: string;
-  openingPayable?: number;
   taxNo?: string;
   taxRate?: number;
   status?: number;
@@ -214,7 +213,6 @@ export interface ErpCustomerForm {
   contact?: string;
   phone?: string;
   address?: string;
-  openingDebt?: number;
   taxNo?: string;
   taxRate?: number;
   status?: number;
@@ -967,17 +965,23 @@ export interface FinOpeningVO {
   partyId: ErpId;
   partyName?: string;
   amount: ErpAmount;
+  /** 期初截止日（含当日），决定期初在哪个账期可见 */
+  openingDate?: string;
   status: ErpBillStatus;
   /** 状态中文文案（后端回填，见 org.erp.common.enums.StatusText） */
   statusText?: string;
   remark?: string;
   createTime?: string;
+  /** 保存时是否覆盖了该单位已有的草稿期初，仅 save 返回时填充 */
+  overwritten?: boolean;
 }
 
 export interface FinOpeningForm {
   partyType: ErpPartyType;
   partyId: ErpId;
   amount: number;
+  /** 期初截止日 yyyy-MM-dd */
+  openingDate: string;
   remark?: string;
 }
 

@@ -85,5 +85,16 @@ public interface IFinArApService {
      */
     void unsettle(Long arApId, BigDecimal amount);
 
-    
+    /**
+     * 统计期初截止日之前已确认的业务单据数：AR 为销售/销售退货/收款，AP 为采购/采购退货/付款。
+     *
+     * 期初金额表示截止日之前的账面余额，若该区间已有业务单据，对账单会把期初与台账重复累加，
+     * 因此期初确认前必须先拦截。
+     *
+     * @param partyType AR/AP
+     * @param partyId   客户/供应商ID
+     * @param before    时间上界（不含），由截止日次日的 00:00 换算
+     * @return 区间内已确认单据数，0 表示无重叠
+     */
+    long countBusinessBefore(String partyType, Long partyId, Date before);
 }

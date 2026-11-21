@@ -138,6 +138,7 @@ public final class BuiltinTemplates {
               </table>
               <div class="summary" style="display: flex; justify-content: space-between; margin-top: 10px; line-height: 1.8;">
                 <div>
+                  <div>期初应收：<span th:text="${statement.opening}">0.00</span></div>
                   <div>当月销售金额：<span th:text="${statement.salesAmount}">0.00</span></div>
                   <div>当月收款金额：<span th:text="${statement.receiptAmount}">0.00</span></div>
                   <div>当月未付金额：<span th:text="${statement.monthlyUnpaid}">0.00</span></div>
@@ -146,6 +147,7 @@ public final class BuiltinTemplates {
                   <div>累计销售金额：<span th:text="${statement.cumulativeSales}">0.00</span></div>
                   <div>累计收款金额：<span th:text="${statement.cumulativeReceipts}">0.00</span></div>
                   <div>累计未付金额：<b th:text="${statement.cumulativeUnpaid}">0.00</b> 元</div>
+                  <div>期末应收：<b th:text="${statement.closing}">0.00</b> 元</div>
                 </div>
               </div>
               <div class="sign">

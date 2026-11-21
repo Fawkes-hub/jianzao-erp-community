@@ -26,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -37,6 +38,7 @@ import java.util.Map;
  * 导入规则：
  * - 先解析并校验全部行，任意行失败则整批不落库；
  * - 往来类型「应收」映射 AR、「应付」映射 AP；
+ * - 期初截止日必填（yyyy-MM-dd），同一往来单位在文件内只允许出现一行；
  * - 校验通过后在一个事务内逐行调用 {@link IFinOpeningService#save}，只保存 DRAFT；
  * - 已确认行（40902）标记整批回滚，错误定位到 Excel 行号；
  * - 单文件最多 2000 行。
@@ -107,11 +109,19 @@ public class FinOpeningExcelService {
             result.failAll(rows.size(), "单次最多导入" + MAX_ROWS + "行，请拆分文件后重试");
             return result;
         }
+        // 旧版模板没有「期初截止日」列时该字段恒为空，逐行报"不能为空"会刷屏且误导；
+        // 整列全空时给一次性提示，同时覆盖"确实没填"与"模板过期"两种原因
+        if (!rows.isEmpty() && rows.stream().allMatch(row -> CellValues.blank(row.data().getOpeningDate()))) {
+            result.failAll(rows.size(), "导入文件未填写「期初截止日」；若使用的是旧版模板（无此列），请重新下载最新模板后填写");
+            return result;
+        }
 
         List<FinOpeningBo> validBos = new ArrayList<>();
         List<ExcelRow<FinOpeningImportRow>> validRows = new ArrayList<>();
         Map<String, ErpCustomer> customerCache = new HashMap<>();
         Map<String, ErpSupplier> supplierCache = new HashMap<>();
+        // 文件内同一往来单位只允许一行，避免 upsert 静默覆盖前一行
+        Map<String, Integer> seenParties = new HashMap<>();
         boolean hasError = false;
 
         for (ExcelRow<FinOpeningImportRow> excelRow : rows) {
@@ -121,9 +131,16 @@ public class FinOpeningExcelService {
             String partyType = CellValues.choice(data.getPartyType(), PARTY_TYPE_MAPPING, "往来类型", true, errors);
             String partyCode = CellValues.required(data.getPartyCode(), "往来单位编码", 32, errors);
             BigDecimal amount = CellValues.decimal(data.getAmount(), "期初金额", 2, true, errors);
+            LocalDate openingDate = CellValues.date(data.getOpeningDate(), "期初截止日", true, errors);
             String remark = CellValues.optional(data.getRemark(), "备注", 500, errors);
             if (amount != null && amount.signum() < 0) {
                 errors.add("期初金额不能为负");
+            }
+            if (partyType != null && partyCode != null) {
+                Integer prevRow = seenParties.putIfAbsent(partyType + "|" + partyCode.toUpperCase(), excelRow.rowNumber());
+                if (prevRow != null) {
+                    errors.add("与第" + prevRow + "行往来单位重复，同一单位只能有一条期初");
+                }
             }
 
             Long partyId = null;
@@ -155,6 +172,7 @@ public class FinOpeningExcelService {
             bo.setPartyType(partyType);
             bo.setPartyId(partyId);
             bo.setAmount(amount);
+            bo.setOpeningDate(openingDate);
             bo.setRemark(remark);
             validBos.add(bo);
             validRows.add(excelRow);
@@ -227,6 +245,7 @@ public class FinOpeningExcelService {
                 export.setPartyType(row.getPartyType());
             }
             export.setAmount(row.getAmount());
+            export.setOpeningDate(row.getOpeningDate() == null ? null : row.getOpeningDate().toString());
             export.setRemark(row.getRemark());
             if ("AR".equals(row.getPartyType()) && row.getPartyId() != null) {
                 export.setPartyCode(customerCodeCache.computeIfAbsent(row.getPartyId(), id -> {
