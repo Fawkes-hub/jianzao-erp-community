@@ -77,6 +77,11 @@
                     <template #icon><CloseCircleIcon /></template>
                   </t-button>
                 </t-tooltip>
+                <t-tooltip v-if="row.status === 'CONFIRMED' && checkPermi(['erp:print:render'])" content="打印" placement="top">
+                  <t-button theme="primary" variant="text" shape="square" size="small" @click="printDialogRef?.open('receipt', row.id, row.no)">
+                    <template #icon><PrintIcon /></template>
+                  </t-button>
+                </t-tooltip>
                 <t-tooltip v-if="row.status === 'DRAFT' && checkPermi(['erp:finance:receipt:remove'])" content="删除" placement="top">
                   <t-button theme="danger" variant="text" shape="square" size="small" @click="handleDelete(row)">
                     <template #icon><DeleteIcon /></template>
@@ -96,6 +101,8 @@
         </div>
       </t-col>
     </t-row>
+
+    <FinancePrintDialog ref="printDialogRef" />
 
     <!-- 新增 / 编辑 / 查看 收款单 -->
     <t-dialog v-model:visible="dialog.visible" :header="dialog.title" width="92%" top="3vh" attach="body">
@@ -221,7 +228,8 @@ import { checkPermi } from '@/utils/permission';
 import { mergeSavedWidths, saveColumnWidths } from '@/hooks/useTableColumnWidth';
 import PartnerSelect from '@/components/erp/PartnerSelect.vue';
 import StatusTag from '@/components/erp/StatusTag.vue';
-import { BrowseIcon, CheckCircleIcon, CloseCircleIcon, DeleteIcon, Edit1Icon, PlusIcon, RollbackIcon } from 'tdesign-icons-vue-next';
+import FinancePrintDialog from '@/components/erp/FinancePrintDialog.vue';
+import { BrowseIcon, CheckCircleIcon, CloseCircleIcon, DeleteIcon, Edit1Icon, PlusIcon, PrintIcon, RollbackIcon } from 'tdesign-icons-vue-next';
 
 interface AllocRow {
   arApId: ErpId;
@@ -253,6 +261,7 @@ interface ReceiptQueryState extends PageQuery {
 }
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const printDialogRef = ref<InstanceType<typeof FinancePrintDialog>>();
 
 const statusOptions = Object.entries(ERP_BILL_STATUS).map(([value, item]) => ({ value: value as ErpBillStatus, label: item.label }));
 

@@ -147,7 +147,7 @@
       <t-tabs v-model="previewTab">
         <t-tab-panel label="预览效果" value="preview">
           <t-empty v-if="!previewHtml" description="暂无预览内容" :image-style="{ fontSize: '100px' }" />
-          <iframe v-else class="preview-frame" :srcdoc="previewHtml" sandbox="allow-same-origin" title="模板预览"></iframe>
+          <iframe v-else class="preview-frame" :srcdoc="previewHtml" sandbox="allow-same-origin allow-modals" title="模板预览"></iframe>
         </t-tab-panel>
         <t-tab-panel label="变量说明" value="vars">
           <t-table
