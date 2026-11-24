@@ -432,8 +432,12 @@ import {
   UploadIcon
 } from 'tdesign-icons-vue-next';
 
-/** 商品折叠阈值：超过即回退普通分页列表（DOC/26 §5.2，2026-11-07 由 2000 下调至 500） */
-const GROUP_LIMIT = 500;
+/**
+ * 商品折叠阈值：超过即回退普通分页列表（DOC/26 §5.2，2026-11-07 由 2000 下调至 500）。
+ * 2026-11-24 由 500 下调至 200：后端 PageQuery.MAX_PAGE_SIZE 在 b04085dc 收紧为 200，
+ * 分组模式按此阈值一次拉全量，超过 200 会被后端拒绝（"分页参数有误"），故必须与后端上限一致。
+ */
+const GROUP_LIMIT = 200;
 
 /** 分组行：分类行只承载分类名与商品数量，不可编辑/删除 */
 interface ProductGroupRow {
